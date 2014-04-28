@@ -1,0 +1,309 @@
+\section{Mutliple Dimensional Time Series: xts\label{sec:xts}}
+
+Matrix of dimensions beyond 2 in \matlab{} is a natural extension of 2-D matrix.
+So is out multiple dimension financial times series class: \mcode{xts}.
+The usage is consistent with \matlab{}'s matrix operations and common sense.
+
+\subsection{Common Functions with slightly different usage}
+
+For easy comparation, we list them in tabel \ref{tab:xts}.
+
+\subsection{Common Functions}
+
+Function which have the same usage as myfints are listed in table \ref{tab:commonxts}.
+
+\begin{landscape}
+\footnotesize
+\begin{longtable}[c]{>{\ttfamily}l<{} p{7cm} p{8cm} p{6cm}}
+  \caption{Comparison between \mcode{xts} and \myfints{}\label{tab:xts}}\\
+  \textsf{\textbf{method name}} & \textsf{\textbf{myfints}} & \textsf{\textbf{xts}} & \textsf{\textbf{notes}} \\
+  \toprule
+  \endfirsthead
+  \textsf{\textbf{method name}} & \textsf{\textbf{myfints}} & \textsf{\textbf{xts}} & \textsf{\textbf{notes}} \\
+  \toprule
+  \endhead
+  \bottomrule
+  \endfoot
+  \bottomrule
+  \endlastfoot
+  \rowcolor{cone}
+  constructor & 
+            fts = myfints\newline
+            fts = myfints(dates, data)\newline
+            fts = myfints(dates, data, fieldnames)\newline
+            fts = myfints(dates, data, fieldnames, freq)\newline
+            fts = myfints(dates, data, fieldnames, freq, desc)\newline
+            fts = myfints(dates, data, fieldnames, freq, desc, unit) 
+            &
+            xts = xts\newline
+            xts = xts(dates, data)\newline
+            xts = xts(dates, data, fieldnames1, ..., fieldnamesN)\newline
+            xts = xts(dates, data, fieldnames1, ..., fieldnamesN, freq)\newline
+            xts = xts(dates, data, fieldnames1, ..., fieldnamesN, freq, desc)\newline
+            xts = xts(dates, data, fieldnames1, ..., fieldnamesN, freq, desc, unit)
+            &
+            $N$ is called field dimension. \mcode{xts} is a $N+1$ dimension \mcode{xts}. \\
+\rowcolor{ctwo}
+ alignfields &
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ...)\newline
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., mode)\newline
+           \newline
+           \newline
+           &
+           [oxts1, oxts2, ...] = aligndata(ixts1, ixts2, ...)\newline
+           [oxts1, oxts2, ...] = aligndata(ixts1, ixts2, ..., mode)\newline
+           [oxts1, oxts2, ...] = aligndata(ixts1, ixts2, ..., flddim)\newline
+           [oxts1, oxts2, ...] = aligndata(ixts1, ixts2, ..., mode, flddim)\newline
+           [oxts1, oxts2, ...] = aligndata(ixts1, ixts2, ..., flddim, mode)
+           &
+           Aligning specified field dimension.
+           if \mcode{flddim} == 0 (default), all field dimensions will be aligned.
+           Input arg \mcode{xts} objects can be different dimensional so long as they all have
+           the specified field dimension.\\
+\rowcolor{cone}
+ aligndata &
+           \multicolumn{2}{p{15cm}}{
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ...)\newline
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., mode)\newline
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., aligningdates)\newline
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., mode, aligningdates)\newline
+           [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., aligningdates, mode)\newline
+           [ofts1, ofts2, ...] = aligndata(..., 'CalcMethod', calcMethod)
+           }
+           & Align data along all dimensions (time and all field dimensions).
+           So all \mcode{xts} objects must have the same dimension.\\
+\rowcolor{ctwo}
+isaligneddata&
+          tf = isaligneddata(fts1, ..., ftsN) &
+          tf = isaligneddata(xts1, ..., xtsN)\newline
+          tf = isaligneddata(xts1, ..., xtsN, flddim) &
+          \mcode{flddim} by default is 0, means check all field dimensions as well as time dim.\\
+\rowcolor{cone}
+isalignedfields&
+          tf = isalignedfields(fts1, ..., ftsN) &
+          tf = isalignedfields(xts1, ..., xtsN) \newline
+          tf = isalignedfields(xts1, ..., xtsN, flddim) &
+         \mcode{flddim} is 0 by default.\\
+\rowcolor{ctwo}
+fieldnames &
+          fn = fieldnames(fts)\newline
+          fn = fieldnames(fts, 1)&
+          fn = fieldnames(xts, 0, flddim)\newline
+          fn = fieldnames(xts, 1, flddim)& 
+          \mcode{flddim} is 1 by default.\\
+\rowcolor{cone}
+getfield &
+         fval = getfield(fts, fields) \hspace{1cm} (fields can be multiple)\newline
+         fval = getfield(fts, fields, dates) \hspace{0.3cm} (fields can be multiple)&
+         fval = getfield(xts, field)  \hspace{1.6cm}(field must be char)\newline
+         fval = getfield(xts, 'dates', dateidx) \hspace{.3cm}(equiv. xts.dates(idx))&
+         Unless accessing \mcode{xts.freq}, \mcode{xts.desc}, \mcode{xts.unit}, or \mcode{xts.dates},
+         you are recommended to use \mcode{xts(timeidx, fidx1, ..., fidxN)} to get part of \mcode{xts}.\\
+\rowcolor{ctwo}
+setfield &
+        fts = setfield(fts, fields, value)\newline
+        fts = setfield(fts, fields, dates, value) &
+        xts = setfield(xts, field, value)\newline
+        xts = setfield(xts, 'dates', dateidx, value) &
+        Similiar to \mcode{getfield} except a value need to be provided.\\
+\rowcolor{cone}
+extfield &
+       fts = extfield(fts, fldnames) &
+       xts = extfield(xts, fldnames, flddim = 1) &\\
+\rowcolor{ctwo}
+rmfield &
+       fts = rmfield(fts, fldnames) &
+       xts = rmfield(xts, fldnames, flddim = 1) &\\
+\rowcolor{cone}
+padfield &
+       fts = padfield(fts, fldnames, padstuff = NaN) &
+       xts = rmfield(xts, fldnames, padstudd = NaN, flddim = 1) &\\
+\rowcolor{ctwo}
+chfield &
+       fts = chfield(fts, oldfldnames, newfldnames) &
+       xts = chfield(xts, oldfldnames, newfldnames, flddim = 1)&\\
+\rowcolor{cone}
+isfield &
+       tf = isfield(fts, fldname) &
+       tf = isfield(xts, fldname, flddim = 1) &\\
+\rowcolor{ctwo}
+fts2mat &
+       mat = fts2mat(fts) \newline
+       mat = fts2mat(fts, datesflag) \newline
+       mat = fts2mat(fts, fldnames) \newline
+       mat = fts2mat(fts, datesflag, fldnames) &
+       mat = fts2mat(xts) & 
+       \mcode{xts} only allow obtaining whole data, excluding dates.\\
+\rowcolor{cone}
+cat &
+      fts = cat(1, fts1, ..., ftsN) or fts = [fts1, ..., ftsN]\newline
+      fts = cat(2, fts1, ..., ftsN) or fts = [fts1; ...; ftsN] &
+      xts = cat(1, xts1, ..., xtsN) or xts = [xts1, ..., xtsN]\newline
+      xts = cat(2, xts1, ..., xtsN) or xts = [xts1; ...; xtsN]\newline
+      xts = cat(dim, xts1, ..., xtsN) &
+      Vertical cat (dim==1, or in form of [fts1;...; ftsN]) will order data by dates in final result.\\
+\rowcolor{ctwo}
+uniftsfun\newline
+biftsfun &
+    xts = uniftsfun(xts, fun, fields, dates) \newline
+    xts = biftsfun(lxts, rxts, fields, dates) &
+    lxts and rxts must be aligned in all dimensions.
+    Now fields can be a cell vector with each element is a cell of strings representing corresponding field dimension's fieldnames.
+    If you want use the original xts' fieldnames, leave corresponding posn an empty thing 
+    (of course, this dimension in result should be matched to that in original xts arguments.
+\end{longtable}
+\end{landscape}
+
+\begin{landscape}
+\footnotesize
+\begin{longtable}{l p{8cm} p{8cm}}
+  \caption{Same usage functions\label{tab:commonxts}}\\
+  \textsf{\textbf{method name}} & \textsf{\textbf{usage}} & \textsf{\textbf{notes}} \\
+  \toprule
+  \endfirsthead
+  \textsf{\textbf{method name}} & \textsf{\textbf{usage}} & \textsf{\textbf{notes}} \\
+  \toprule
+  \endhead
+  \bottomrule
+  \endfoot
+  \bottomrule
+  \endlastfoot
+  \rowcolor{cone}
+  aligndates &
+           [ofts1, ofts2, ...] = aligndates(ifts1, ifts2, ...)\newline
+           [ofts1, ofts2, ...] = aligndates(ifts1, ifts2, ..., aligningdates)\newline
+           [ofts1, ofts2, ...] = aligndates(..., 'CalcMethod', calcMethod)
+           &
+           Resampling along the time dimension.
+           \mcode{'CalcMethod'} can be \mcode{'cumsum'}, \mcode{'exact'}, \mcode{'nearest'}(default),
+           and \mcode{'simavg'}.
+           Input arguments of \mcode{xts} can be different in number of dimensions.\\
+ \rowcolor{ctwo}
+ isaligneddates& tf = isaligneddates(fts1, ..., ftsN) & \\
+ \rowcolor{cone}
+ isempty & tf = isempty(xts) &\\
+ \rowcolor{ctwo}
+ isequal & tf = isequal(fts1, ..., ftsN) & \\
+ \rowcolor{cone}
+ size    & sz = size(xts) \newline 
+           sz = size(xts, dim) \newline
+           [sz1, sz2,...,szN] = size(xts) &\\
+ \rowcolor{ctwo}
+ length & len = length(xts) & Equivalent to size(xts,1) \\
+ \rowcolor{cone}
+ lagts \newline
+ leadts &
+        xts = lagts(xts, nperiod, padmode = 0)\newline
+        xts = leadts(fts, nperiod, padmode = 0) 
+        & padmode default value takes 0 for compatible with \matlab{} fints.\\
+ \rowcolor{ctwo}
+ Relation Ops & \texttt{>=, >, <, <=, ==, $\sim$=}, $sim$ & 
+       One operand should be xts, the other either be a scalar, dimensional-match matrix, or aligned xts\\
+ \rowcolor{cone}
+ uniary Ops & -xts, +xts & $-$: flip sign of xts, $+$ has no effect \\
+ \rowcolor{ctwo}
+ Binary Ops & \texttt{+, -, *, /, .*, ./, \^{}} & Note that \texttt{*} and \texttt{/} are equivalent to \texttt{.*} and \texttt{./} \\
+ \rowcolor{cone}
+ \multicolumn{2}{l}{nanmax, nanmin, nanmean, nanmedian, nansum, nanstd, nanvar, var} & 
+        Same as \matlab{}'s corresponding functions; all return ordinary matrix. For Compatible with \matlab{}'s fints\\
+ \rowcolor{ctwo}
+ \multicolumn{2}{l}{isnan, isinf, exp, log, log10, log2, abs} & Element-level ops; all return another xts \\
+ \rowcolor{cone}
+ cumsum, diff & oxts = cumsum(ixts), oxts = diff(ixts) & Ops along time dimension. Return another xts. Returned from diff has one less row\\
+ \rowcolor{ctwo}
+ \multicolumn{2}{l}{convertto, toannual, todaily, tomonthly, toquarterly, tosemi, toweekly} & Resampling along time dimension\\
+ \rowcolor{cone}
+ backfill\newline
+ forwardfill &
+         backfill(o, lookbackperiod, mode) \newline
+         forwardfill(o, lookfwdperiod, mode) &
+         Now when mode is 'entry', it fill along time dimension for all other dimensions.
+         If it is 'row', filling will use data without NaNs in all dimensions.\\
+\rowcolor{ctwo}
+  multiftsfun & oxts = multiftsfun(xts1, ..., xtsN, fun) & Perform fun(xts1,...,xtsN); all xts must be aligned in all dimensions\\
+\rowcolor{cone}
+  bsxfun & oxts = bxsfun(fun, lxts, rxts) & Same usage as for 2-D. Note now singleton extension expanded to all dimensions. 
+        First fit (in terms of dimension) field used in result. See \ref{sec:bsxfun}.
+\end{longtable} 
+\end{landscape}
+
+\subsection{Functions only applicable for myfints}
+\begin{itemize*}
+\item  \mcode{nancov corrcoef cov}
+\item  \mcode{max min mean std}: It's wield that these 4 return a structure in \matlab's fints
+\item  All \mcode{csXXXX} functions
+\item  All \mcode{ftsmovXXX} functions
+\item  \mcode{ftsnanmean, ftsnanstd, ftsnansum, ftswgtmean}
+\item  All \mcode{XXXXif} function which we don't recommend to use even for \mcode{myfints}
+\item  Backtest functions: \mcode{neutralize, normalize, optimize, tsplot, plot} 
+\item  \emph{Depreciated} functions: \mcode{datemismatch, fieldmismatch, isidenticaldates, isidenticalfields}
+\item  Functions for compatibility with \matlab{}'s fints: \mcode{tsmovavg, macd}
+\end{itemize*}
+
+\subsection{Indexing}
+
+Suppose we have a 4-D xts: first dimension is time, second for security ids, third for factors, and forth for long or short.
+Further suppose size of time dim is 10, size of security dim is 10, size of factor dimension is 5, for factors {'fac1', 'fac2', 'fac3', 'fac4', 'fac5'}, and size of forth dimension is 2 for {'short', 'long'}. Our 4-D xts variable is x with size of $10\times10\times5\times2$.
+Following examples show you how to indexing an xts.
+\begin{lstlisting}[numbers=none]
+  a = x(:,:,:, 'short');              % return a 3-D xts since last dimension is singleton.
+  a = x(:,:,{'fac1','fac5'}, :);      % return a 4-D xts: 10x10x2x2
+  a = x(:,:,'fac2', {'long'});        % return a myfints (10x10) since last two dimension are singletons. 
+  a = x(:,:,'fac2', {'long', shor'}); % return 4-D xts: 10x10x1x2
+
+  a = squeeze(x(:,:,'fac2', {'long', shor'}));
+  % return a 3-D xts: 10x10x2, the factor dim disappeared since it's singleton
+
+  a = x(:,5,:,'short');          
+  % return a 3-D xts: 10x1x5, last dim is singleton and removed automatically
+
+  a = squeeze(x(:,5,:,'short'));
+  % return a myfints: 10x5, last dim removed automatically and security dim squeezed since it's singleton
+
+  a = x(1,:,:,:);                    % return 4-D xts: 1x10x5x2
+  a = x(1,:,'fac1','long');          % return myfints: 1x10, traling singleton dims removed 
+  a = squeeze(x(1,:,'fac1','long'))  % same as above since myfints don't have squeeze ops
+  a = squeeze(x(1,:,:,:));           % return a 10x5x2 matrix, since squeeze ops on an xts
+
+  a = squeeze(x(1,:,'fac1',:))      
+  % return a 3-D xts: 1x10x2, since squeeze ops on 1x10x1x2 xts which keeps time dim even it singleton
+\end{lstlisting}
+
+The rules are
+\begin{enumerate}
+   \item Traling singleon dimensions beyond 2 are always removed automatically.
+   \item 2-D xts will automatically casted into a myfints.
+   \item Squeeze() has no effect on a myfints.
+   \item If some dimensions but time are singleton in an xts, squeeze() will remove them.
+   \item If the only singleton dimension is time in an xts, squeeze() will remove time dimension and return a plain matrix. 
+\end{enumerate}
+
+\subsection{Packing Matrix into \mcode{xts}}
+\funentry{mat2xts}
+   Convert data from \matlab's vectors into an \mcode{xts} object.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   xts = mat2xts(date, val, fields1, ..., fieldN)
+   \end{lstlisting}
+
+   Convert vectors to an (N+1) xts.
+
+\inarg
+   \begin{argdesc}
+   \item[date, val] vectors represent dates and corresponding values, receptively.
+   \item[field1,...,fieldN]  vector represents individual field dimensions (e.g., securities ids).
+   \end{argdesc}
+
+   Note that the sizes of \mcode{date}, \mcode{val}, \mcode{fields1},..., and \mcode{fieldsN}
+   must be agree with each other.
+   The orders of these vectors are irrelevant (ordering will be done inside \mcode{mat2xts}).
+   
+\outarg
+   \begin{argdesc}
+   \item[xts] an $N+1$ dimentional \mcode{xts}.
+              The number of periods (time points) is determined by number of unique values in \mcode{date};
+              other dimension's size is determined by unique values in corresponding \mcode{fields1}.
+   \end{argdesc}
+
+

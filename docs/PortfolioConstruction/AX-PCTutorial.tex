@@ -1,0 +1,27 @@
+\documentclass[10pt,twoside,a4paper]{article}
+\input{settings}
+
+\newcommand\mytitle{\matlab{} to \axioma{} API Tutorial}
+\newcommand\myfints{\mcode{myfints}}
+\newcommand{\matlab}{{\textsc{Matlab}}}
+\newcommand{\axioma}{{\textsf{\textmd{Axioma}\textbf{Portfolio}$^{\text{\textsf{\tiny{TM}}}}$}}}
+\newcommand{\Lbw}{\mathbf{w}}
+
+\begin{document}
+\pagenumbering{roman}
+\title{\textbf{\mytitle}}
+\author{}
+\maketitle
+
+\tableofcontents
+%\listoftables
+%\listoffigures
+\cleardoublepage
+\lstset{backgroundcolor=\color{lightgrey},
+        basicstyle=\ttfamily\footnotesize,  
+        aboveskip={0.5\baselineskip},
+        basewidth=0.5em}
+
+\input{tutorial}
+
+\end{document}

@@ -1,0 +1,142 @@
+\section{Introduction\label{sec:intro}}
+\setcounter{page}{1}
+\pagenumbering{arabic}
+
+The \toolboxname{} defines a framework for constructing factors 
+and provides a bunch of functions to support and facilitate the process,
+including acquiring, sampling, aligning and manipulating basic data items
+(financial like EPS and DPS and market-related like prices and shares)
+upon which factors are built, 
+and testing, visualizing and reporting tools.
+These functions cover a wide range of functionalities and reach
+every part of our quantitative infrastructure,
+across from the very first stage of quantitative model development work 
+to the last stage of generating the real trading data.
+Most of our other tools, such as factor (linear and nonlinear) combination,
+factor analysis and monitoring, performance attribution, 
+model backtest and portfolio construction, are built on this toolbox.
+Figure \ref{fig:whole} shows you the whole picture of it.
+
+\begin{figure}[!hbp]
+\centering
+\caption{Structure of \toolboxname{}\label{fig:whole}}
+\begin{tikzpicture}[node distance=0.1cm,auto]
+  \tikzset{
+    blknode/.style={rectangle, rounded corners, draw=black,
+                   top color=white, bottom color=SkyBlue!50,
+                   very thick, inner sep=5pt,
+                   minimum width=3.5cm, minimum height=1cm,
+                   column sep=5pt},
+    subnode/.style={rectangle, rounded corners, draw=white,
+                   top color=NavyBlue!10,bottom color=NavyBlue!60,
+                   very thick, inner sep=2pt},
+    myarrow/.style={->, >=latex', shorten >=1pt, thick},
+    mylabel/.style={text width=7em, text centered},
+  }
+
+  \matrix [blknode] (base) {
+	  \node[subnode] (xts) {xts}; &
+	  \node[subnode] (db)  {DB}; \\
+  };
+ 
+  \matrix [blknode, below=of base] (myfints) {
+	  \node[subnode] (my) {myfints}; &
+	  \node[subnode] (myfints utilities) {myfints utilities};\\
+  };
+
+  \matrix [blknode, below=of myfints] (FacBase) {
+     \node[subnode,minimum width=5.5cm,align=left] (local FacBase) {\textbf{FacBase\qquad\qquad}}; 
+	  \node[subnode,minimum size=1mm, anchor=east,drop shadow] at ([xshift=-5pt]local FacBase.east) (DateBasis) {DateBasis}; &
+     \node[subnode,minimum width=1.5cm] (Freq) {Freq}; \\
+  };
+
+  \def\step{1.25cm}
+  \matrix [blknode, below=of FacBase, minimum height=0.1mm,row sep=-0.5cm] (Factors) {
+     \node[minimum width=7.28cm, minimum height=0.1cm] (local Factors) {\textbf{Factors} (FactorLib)};\\
+     \foreach \s in {1,...,3} 
+     {
+        \node[draw,color=white,circle,fill,top color=NavyBlue!15,bottom color=NavyBlue!65,minimum size=0.1mm,font=\footnotesize,circular drop shadow] 
+        at ([xshift=\step*(\s)]local Factors.west){\color{black}fac\s};
+     }
+     \foreach \s in{1,2,3}
+     {
+        \shade[ball color=NavyBlue!50, opacity=1] ([xshift=3*\step+0.5cm+\s*12pt,yshift=-0.5cm]local Factors.west) circle (0.1);
+     }
+     \node[draw,color=white,circle,fill,top color=NavyBlue!15,bottom color=NavyBlue!65,minimum size=0.1mm,font=\footnotesize,circular drop shadow] 
+        at ([xshift=\step*5]local Factors.west){\color{black}fac$n$};
+     \\
+  };
+
+  \begin{scope}[every node/.style={font=\Huge\bfseries\sffamily},color=gray!70]
+     \node at ([xshift=-20pt]base.west)    {1};
+     \node at ([xshift=-20pt]myfints.west) {2};
+     \node at ([xshift=-20pt]FacBase.west) {3};
+     \node at ([xshift=-20pt]Factors.west) {4};
+  \end{scope}
+
+\end{tikzpicture}
+\end{figure}
+
+\begin{enumerate}
+   \item The very first layer is quite fundamental, consisting of \mcode{xts} -- 
+         multi-dimensional time series class representing the basic data form used in \matlab{},
+         and \mcode{DB} -- interface class to Database for accessing data.
+         \mcode{xts} can be regarded as labeled matrices with first dimension for time, others labeled with some meaningful names. 
+         Labeled matrices greatly facilitates data sampling and aligning which are tedious chores and easily error-prone.
+
+         \mcode{DB} isolates and wraps most of interactions with database.
+         There are another group of functions (name started with \mcode{'Load'}) in \mcode{myfintsutility}
+         which are actually another wrapping layer for \mcode{DB} class.
+           
+   \item This layer is \mcode{myfints} and related things in \mcode{myfintsutility} folder.
+         \mcode{myfints} is 2-D \mcode{xts}, derived from \mcode{xts} (therefore having all methods from \mcode{xts}),
+         plus things specific and more meaningful (e.g., \mcode{tsplot}) 
+         (e.g., functions with names started with \mcode{'cs'}) in 2-D situation.
+         Many useful tools are also placed here, like 
+         \begin{itemize}
+           \item \mcode{Options}, collecting operations related to processing named function arguments (name-value pairs),
+           \item \mcode{grep}, regular search and/or replace string in files,
+           \item \mcode{PDFDoc}, generating PDF documents with figures and tables,
+           \item \mcode{TRACE}, logging facilities (to screen, files, and/or database),
+         \end{itemize}
+         to name a few.
+
+   \item \mcode{FacBase} is derived from \mcode{myfints} and provides a framework on how to define a factor.
+        Factors, associated with a security, is something that related to the future movements of the security prices;
+        in other words, they have certain predictability.
+        A typical factor, for example, is Book to Price, a ratio of company's book value to its share price,
+        usually positively correlated to the company's stock price.
+        \mcode{FacBase} take care of the details of such things as: 
+        data processing (e.g., back filing missing data), 
+        sampling (frequency internally used by items for calculation and frequency in factors returned to user),
+        and aligning (both in time and other dimensions).
+        It also provides methods for period calculation.
+
+        Inside \mcode{FacBase}, there is a member of type \mcode{DateBasis} to deal with different (internal)
+        frequencies, with the help from class \mcode{Freq}.
+
+   \item This layer consists of classes of factors derived from \mcode{FacBase}.
+        Since the base class \mcode{FacBase} deals with majority routine common things,
+        concrete factor classes should only focus on the definition of factors.
+        That is why code in factors usually is so neat.
+
+        There also exists a class \mcode{Factory} in charge of populating factors to database.
+\end{enumerate}
+
+
+In this guide book,
+we will first (section \ref{sec:steps}) present you the factor construction framework, detailing the steps how to create a factor.
+Then move to discuss functions consisting of this toolbox by category.
+Section \ref{sec:DBIO} briefs the database structure and related functions.
+Since in most cases, we encounter and deal with 2-D matrices,
+so section \ref{sec:myfints} discusses \mcode{myfints}, 
+which is a 2-D version of \mcode{xts},
+with many unique things and being most useful in quantitative research.
+After that, \mcode{xts} will be introduced with comparison with \mcode{myfints}.
+
+
+
+
+
+
+

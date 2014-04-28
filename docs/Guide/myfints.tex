@@ -1,0 +1,1620 @@
+\section{Use of myfints\label{sec:myfints}}
+
+This section covers the most important methods specific to
+\myfints{}.
+It does not enumerate all the methods of \myfints{} however.
+For a complete list of methods, type either \mcode{methods(myfints\_obj)}
+or \mcode{methods(myfints)}.
+
+\subsection{Aligning Data}
+
+\funentry{aligndata}
+   Align inputted \mcode{myfints} objects both along time and fields. 
+  
+\usage
+%
+   \begin{lstlisting}[numbers=none]
+   [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ...)
+   [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., mode)
+   [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., aligningdates)
+   [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., mode, aligningdates)
+   [ofts1, ofts2, ...] = aligndata(ifts1, ifts2, ..., aligningdates, mode)
+   [ofts1, ofts2, ...] = aligndata(..., 'CalcMethod', calcMethod)
+   \end{lstlisting}
+%
+\where
+%
+   \begin{argdesc}
+	   \item[ifts1, ifts2,...] 
+                      \myfints{} objects to be aligned. Multiple such objects
+                      are allowed.
+	   \item[ofts1, ofts2,...] 
+                      returned \myfints{} objects that have been aligned.
+                      Each corresponds to and has the same type of the inputted ones;
+                      i.e., if the original one is of type \mcode{BKTOPRICE}, 
+                      the corresponding aligned one is still of the same type.
+	   \item[mode]  
+                      control how the fields in time series aligned.
+	                   Values can be one of
+	                   \begin{itemize}
+	                      \item \mcode{'union'}. include all (unique) fields occurred in all
+	                                inputted \myfints{} objects. NaNs are filled
+	                                for original nonexistent fields.
+	                      \item \mcode{'intersect'}. only take the common fields in all
+	                                inputted \myfints{} objects. Fields specific
+	                                to a certain \myfints{} object are removed.
+                      \end{itemize}
+	                   \emph{DEFAULT} is \mcode{'intersect'}.
+	   \item[aligningdates]
+                      A vector of dates (numeric vector or cell vector of date
+                      string) to be aligned,  OR\par
+                      a char vector (string) or scalar number 
+                      indicating aligned frequency
+                      which can be
+                      \input{freqdesc}
+                     
+                     \begin{itemize*}
+                     \item All the inputted \myfints{} objects will be aligned
+                      against this date vector or specified frequency. 
+                      Returned objects being aligned
+                      have the \mcode{aligningdates} (when it is a date vector)
+                      or equivalent (when it is a frequency) as their date field. 
+
+                     \item For returned objects, on a certain date, 
+                      data are the most recent available (known) data 
+                      between the date (inclusive) and its previous date
+                      (exclusive). 
+
+                     If no data in inputted objects available 
+                      in a period (specified or divided by \mcode{aligneddates}),
+                      \mcode{NaN}s will be filled.
+
+                     \item If NOT provided, aligned dates will be the common dates
+                      in all inputted objects.
+                     \end{itemize*}
+	   \item[calcMethod]
+	                 \input{calcmethod}
+   \end{argdesc}
+%
+
+\funentry{aligndates}
+
+   aligns inputted \mcode{myfints} objects along time.
+
+\usage
+%
+   \begin{lstlisting}[numbers=none]
+   [ofts1, ofts2, ...] = aligndates(ifts1, ifts2, ...)
+   [ofts1, ofts2, ...] = aligndates(ifts1, ifts2, ..., aligningdates)
+   [ofts1, ofts2, ...] = aligndates(..., 'CalcMethod', calcMethod)
+   \end{lstlisting}
+%
+   This function is similar to \mcode{aligndata}, except it aligns data only along date dimension.
+   See the explanation of arguments there. 
+\medskip
+
+\funentry{alignfields}
+
+   aligns inputted \mcode{myfints} objects along fields.
+%
+\usage
+   \begin{lstlisting}[numbers=none]
+   [ofts1, ofts2, ...] = alignfields(ifts1, ifts2, ...)
+   [ofts1, ofts2, ...] = alignfields(ifts1, ifts2, ..., mode)
+   \end{lstlisting}
+%
+   This function is similar to \mcode{aligndata}, except it aligns data only along fields dimension.
+   See the explanation of arguments there. 
+\medskip
+
+\funentry{isaligneddata, isalignedfields, isaligneddates}
+   Determine if \myfints{} objects given in arg list are aligned both/either in time and fields.
+%
+\usage
+   \begin{lstlisting}[numbers=none]
+   isaligned = isaligneddata(fts1, fts2, ...)
+   isaligned = isalignedfields(fts1, fts2, ...)
+   isaligned = isaligneddates(fts1, fts2, ...)
+   \end{lstlisting}
+\where
+   \mcode{tfs1}, \mcode{tfs2}, etc. are \myfints{} objects to be determined. 
+   If they are aligned both in  time and fields, returns true; otherwise false.
+
+   Note that this function is different from \mcode{iscompatible(fts1,fts2)}
+   which is inherited from \matlab's \mcode{fints} and returns true as long as the two 
+   objects have the same fields and date irrespective of field order.
+   
+\subsection{Filling Missing Data}
+
+\funentry{backfill}
+   Fill time series backwards where the values are \mcode{NaN}s with previous latest available data.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   fts = backfill(old_fts, lookbackperiod, mode)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item [old\_fts]	  a \myfints{} object to be filled. 
+   \item [lookbackperiod]   number of periods to look back for filling.
+         If data at a time is \mcode{NaN}, 
+         the function will look back 
+         at most \mcode{lookbackperiod} periods
+         and find the latest available data in these past periods to fill the \mcode{NaN}. 
+         If you want to look back through to the very beginning of time series, 
+         just put this value as \mcode{inf}.
+   \item [mode] can be \mcode{'row'} or \mcode{'entry'}, 
+         meaning filling occurs only when the whole row are \mcode{NaN}s or
+         whenever an element is a \mcode{NaN}, respectively.
+   \end{argdesc}
+
+\outarg
+   \begin{argdesc}
+   \item [fts] the backfilled \myfints{} object.
+   \end{argdesc}
+
+
+\funentry{forwardfill}
+   Fill time series forwards where the values are \mcode{NaN}s with most recent available data in 
+   the future.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+    fts = forwardfill(old_fts, lookfwdperiod, mode)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item [old\_fts]	  a \myfints{} object to be filled.
+   \item [lookfwdperiod]   number of periods to look forward (into future) for filling.
+         If data at a time point is \mcode{NaN}, 
+         the function will look forward 
+         at most \mcode{lookfwdperiod} periods
+         and find the most recent available data in future these periods to fill the \mcode{NaN}. 
+         If you want to look forward through to the last period, 
+         just put this value as \mcode{inf}.
+   \item [mode] can be \mcode{'row'} or \mcode{'entry'}, 
+         meaning filling occurs only when the whole row are \mcode{NaN}s or
+         whenever an element is a \mcode{NaN}, respectively.
+   \end{argdesc}
+
+\outarg
+   \begin{argdesc}
+	\item [fts] the forward filled \myfints{} object.
+   \end{argdesc}
+
+
+\subsection{Factor Backtesting}
+
+\funentry{optimize}
+ Calculates optimal weights for multiple alpha sources (factors) based on their historical performance
+(in terms of IC).
+
+In the following, we suppose there are $K$ factors and $N$ securities,
+over a total of $T$ periods. 
+For each factor, we may also include their lagged values in current period optimization.
+(Current factor value always be included.)
+We denote by $L_k$ the number of lagged factors involved for factor $k$,
+where $k=1,\ldots,K$ indexing factor. 
+So the total number of factors involved in optimization is $K+\sum_{k=1}^K L_k$.
+By optimization, we are trying to obtain optimal weights for each factor (and their lagged ones)
+over each period.
+Denote factor weights at period $t$ by
+   \begin{align}\label{eq:W}
+     \Lbw'_t=(&w_{1,t},w_{1,t-1}\ldots,\allowbreak w_{1,t-L_1},\notag\\
+             & \ldots \ldots,\notag\\
+             & w_{k,t},w_{k,t-1}\ldots,\allowbreak w_{k,t-L_k},\\
+             & \ldots \ldots,\notag\\
+             & w_{K,t},w_{K,t-1}\ldots,\allowbreak w_{K,t-L_K}),\notag
+   \end{align}
+where $w_{k,t-\ell_k},k=1,\ldots,K,\ell_k=1,\ldots,L_k$ indicates optimal weights at period $t$ for $k$th factor at lag $\ell_k$.
+Correspondingly, the factor vector at that period is denoted by
+   \begin{align}\label{eq:F}
+     \mathbf{F}_t=(&F_{1,t},F_{1,t-1}\ldots,\allowbreak F_{1,t-L_1},\notag\\
+             & \ldots \ldots,\notag\\
+             & F_{k,t},F_{k,t-1}\ldots,\allowbreak F_{k,t-L_k},\\
+             & \ldots \ldots,\notag\\
+             & F_{K,t},F_{K,t-1}\ldots,\allowbreak F_{K,t-L_K})'.\notag
+   \end{align}
+Both $\Lbw_t$ and $\mathbf{F}_t$ are $(K+\sum_{k=1}^K L_k)\times 1$ vectors.
+
+
+\iffalse
+The composited moving-average factor, denoted by $\mathbf{F}_t^{\text{c,ma}}$, is
+   \begin{equation}\label{eq:Fcma}
+       F_t^{\text{c,ma}} = \Lbw_t' \mathbf{F}_t.
+	\end{equation}
+For one security, it is a scalar. 
+Collect all such values for all securities,
+It is a $N\times 1$ vector of 
+  \begin{equation}
+   \mathbf{F}_{t}^{\text{c,ma}} = ({F}_{t,i}^{\text{c,ma}})_{i=1,\ldots,N}.
+  \end{equation}
+\fi
+
+Finally, for late reference, we define
+\begin{align*}
+    \mathbf{C}_t &= \cov(\mathbf{F}_t),\\
+    \mathbf{D}_t &= \cov(\mathbf{F}_t,\mathbf{F}_{t-1}) \equiv \E\left\{\left[\mathbf{F}_t-E(\mathbf{F}_t)\right]\left[\mathbf{F}_{t-1}-E(\mathbf{F}_{t-1})\right]\right\}.
+\end{align*}
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   function [W, IR_optm, alpha, IC, exitflag] = ...
+            optimize(factors, stockRet, 'option_name', option_value, ...)
+   \end{lstlisting}
+
+\inarg
+  \begin{argdesc}
+	\item[factors]  (a cell vector of \myfints{}) Cell vector of factors of size $K$,
+                   each factor (a \myfints{}) is a $T\times N$ \myfints{} object.
+                   All the \myfints{} objects in \mcode{factors} must be aligned.
+   \item[stockRet] (\myfints{}) Securities returns, $T\times N$. 
+                   Must be aligned to \myfints{} objects in \mcode{factors}.
+                   \footnote{When doing forecasting for next-period, one-period forward returns make sense.}
+	\item['option\_name', option\_value, ...] Pairs acting as named arguments providing additional information to the optimization process. 
+	   \begin{longtable}[r]{>{\ttfamily}l<{} p{1.5cm} c p{9.5cm}}
+   	      \textsf{\textbf{Options}} & \textsf{\textbf{Values}} & \textsf{\textbf{Default}} & \textsf{\textbf{Meanings}} \\
+		      \toprule
+		      \endfirsthead
+   	      \textsf{\textbf{options}} & \textsf{\textbf{values}} & \textsf{\textbf{default}} & \textsf{\textbf{meanings}} \\
+		      \toprule
+		      \endhead
+		      \bottomrule
+		      \endfoot
+		      \bottomrule
+		      \endlastfoot
+             \rowcolor{cone}
+	          \mcode{method} & '\textit{Obj:Con}' & \mcode{'M/V:RHO'} &
+                    A string consisting of 2 parts (objective and contraint) delimited by '\mcode{:}'. 
+                    See explanation below. \\
+             \rowcolor{ctwo}
+		       \mcode{lag} & $\geq 0$, int & 11 & 
+                    Indicates how many lagged factors involved in the optimization.
+                    Should be a scalar or a vector of length equal to $K$ (number of factors).
+                    If it is a scalar, the same lag will be applied to all factors;
+                    if a vector, each element applies to the corresponding factor in \mcode{factors}.\\
+             \rowcolor{cone}
+		       \mcode{rho} & $[0,1]$ & 1.0 & 
+                    Target value of the constaint specified in \mcode{method}.
+                    Since all available constaints for now are some kind of correlation,
+                    this parameter shoud be in range of 0 to 1.
+                    See notes below for more details.\\
+             \rowcolor{ctwo}
+		       \mcode{lambda} & $\geq 0$ & 0 & 
+                    This parameter appears in objective.\par
+                    if \mcode{M/V}, it controls weight mass distribution among weights;\par
+                    if \mcode{M-V}, it plays a risk-aversion parameter role. \\
+             \rowcolor{cone}
+		       \mcode{ICWin} & $\geq 0$, int & [36 0] & 
+                    Specifies the period-window used for calculating mean and std of ICs, consisting of 2 values.\par
+                    The first indicates how many past-period ICs used in optimization.
+                    0 means \emph{expanding}, others the \emph{actual} window size;
+                    should $>$ lag+2 (or 0) since we have \mcode{lag} lagged factors involved
+                    and at the least 2 ICs needed to get a meaningful standard deviation.\par
+                    The second specifies how many forward-period ICs included in calculating IC.
+                    If want to include all future periods, set it to \mcode{Inf}.\\
+             \rowcolor{ctwo}
+             \mcode{lb} & $\geq 0$ & 0 &
+                    Lower bound of all weights.
+                    Note that the upper bound of all weights is 1.\\
+             \rowcolor{cone}
+             \mcode{IC} & {\tiny$T\times (K+\sum_{k=1}^K L_k)$}\par \myfints{} & empty &
+                    IC matrix provided by user.
+                    If ommitted or provided as empty (\mcode{[]}), 
+                    \mcode{optimize} will calculate IC from 
+                    \mcode{factors} and \mcode{stockRet}.
+	   \end{longtable}
+  \end{argdesc}
+
+\outarg
+  \begin{argdesc}
+  \item[W]   (\myfints{}) optimal weights, $T\times (K+\sum_{k=1}^K L_k)$ where $T$ is number of periods, 
+     $K$ the number of factors and $L_k$ (option \mcode{lag}) is the number of lags involved for factor $k$. 
+     Each \emph{row} corresponds to a one-time period optimized weight vector, $\Lbw'_t$, given in equation (\ref{eq:W}).
+  \item[IR\_optm] (\myfints{}) IR values when the \mcode{W} is applied to the objective function, $T\times 1$.
+  \item[alpha] (\myfints{}) alphas when apply \mcode{W} to blend factors, $T\times N$.
+  \item[IC] (\myfints{}) Information Coefficients for each factor (include lagged factors) at every time period, $T\times (K+\sum_{k=1}^K L_k)$.
+            If user provided an IC via \mcode{'IC'} parameter, it will be the same as the user-provided; 
+            otherwise, it will be the one \mcode{optimize} calculated from \mcode{factors} and \mcode{stockRet}.
+  \item[exitflag] (\myfints{}) flags for diagnosing optimization process. 1 indicates success, 0 not convergent, negative values indicate
+     problems. See also \texttt{fmincon}. $T\times 1$, each element corresponding to one period optimization.
+  \end{argdesc}
+
+\fundesc{Notes:}
+\begin{enumerate*}
+  \item \mcode{optimize} treats \mcode{NaN}s in \mcode{stockRet} and \mcode{factors} as missing values
+       (excluded from optimization).
+  \item All matrices and vectors returned have the same number of rows ($T$).
+        The very first few rows (\mcode{max(lag)+2}) are \texttt{NaN}s (needed for IC calculation).
+  \item Optimization method can be specified by named parameter \textbf{method}
+        which consists of two parts delimited by a '\mcode{:}'. 
+        The first part specifies the type of objective, the second for constraint.
+
+        \begin{itemize*}
+        \item \emph{Objective} could be one of the following:
+	        \begin{enumerate*}
+           \setlength{\itemsep}{6pt}
+	        \item \mcode{'EW'}. Simply equally weight factors. No constraint should be specified.
+	        \item \mcode{'M/V'}.
+		       $\displaystyle
+		       \max_{\Lbw_t}\,\IR_t = \frac{\Lbw_t'\,\overline{\mathbf{IC}}_t}
+		                                     {\sqrt{\Lbw_t'\,\bm{\Sigma}_{\mathbf{IC_t}}\,\Lbw_t}}
+		            - \lambda \Lbw_t'\Lbw_t.
+		       $
+             \footnote{Gradient (omitting subscript $t$):
+             $\nabla\IR(\Lbw)=(\Lbw'\bm{\Sigma}_{\mathbf{IC}}\Lbw)^{-\frac{1}{2}}
+             \left[\overline{\mathbf{IC}}_t-
+             \Lbw'\overline{\mathbf{IC}}_t(\Lbw'\bm{\Sigma}_{\mathbf{IC}}\Lbw)^{-1}\bm{\Sigma}_{\mathbf{IC}}\Lbw\right].$}
+	        \item \mcode{'M-V'}.
+		       $\displaystyle
+		       \max_{\Lbw_t}\,\IR_t = \Lbw_t'\,\overline{\mathbf{IC}}_t - 
+		                                \lambda\left(\Lbw_t'\,\bm{\Sigma}_{\mathbf{IC}}\,\Lbw_t\right).
+		       $
+	        \end{enumerate*}
+
+        \item \emph{Constraint} could be one of the following:
+	        \begin{enumerate*}
+           \setlength{\itemsep}{6pt}
+	        \item \mcode{'RHO'}.
+		       $\displaystyle
+		        \frac{\cov\left(\Lbw_t'\mathbf{F}_t,\,\Lbw_{t}'\mathbf{F}_{t-1}\right)}
+		         {\var\left(\Lbw_t'\mathbf{F}_t\right)} 
+             = \frac{\Lbw_t' \mathbf{D}_t \Lbw_t}{\Lbw_t' \mathbf{C}_t \Lbw_t}\geq \rho.
+		       $
+             \footnote{Gradient (omitting subscript $t$):
+             $\nabla\rho(\Lbw) =
+             (\Lbw'\mathbf{C}\Lbw)^{-1}\left[ (\mathbf{D}+\mathbf{D}')-
+             \frac{\Lbw'\,\mathbf{D}\,\Lbw}{\Lbw'\,\mathbf{C}\,\Lbw}(\mathbf{C}+\mathbf{C}') \right]\Lbw.$}
+
+	      \item \mcode{'RA'}.
+		       $\displaystyle
+		        \frac{\cov\left(\Lbw_t'\mathbf{F}_t,\,\Lbw_{t-1}'\mathbf{F}_{t-1}\right)}
+		         {\sqrt{\var\left(\Lbw_t'\mathbf{F}_t\right)\var\left(\Lbw_{t-1}'\mathbf{F}_{t-1}\right)}}
+             =\frac{\Lbw_t'\mathbf{D}_t\Lbw_{t-1}}{\sqrt{\Lbw_t'\mathbf{C}_t\Lbw_t{\Lbw_{t-1}'\mathbf{C}_{t-1}\Lbw_{t-1}}}} \geq \rho.
+		       $
+             \footnote{Gradient (omitting subscript $t$):
+             $\nabla\rho(\Lbw) =
+              (\Lbw_{t-1}'\mathbf{C_{t-1}}\Lbw_{t-1}\;
+               \Lbw'\mathbf{C}\Lbw)^{-\frac{1}{2}}\left[\mathbf{D}\Lbw_{t-1}-
+               \Lbw'\,\mathbf{D}\,\Lbw_{t-1}(\Lbw'\,\mathbf{C}\,\Lbw)^{-1}\mathbf{C}\Lbw\right].$}
+
+         \item \mcode{'RFAC'},
+            $\displaystyle
+               \Lbw'_t\,(\corr_t^{k,\ell_k})_{k=1,\ldots,K}^{\ell_k=0,\ldots,L_k} \geq \rho,
+            $
+          where $\corr_t^{k,l_k} = \corr(\mathbf{F}_t^{k,\ell_k},\,\mathbf{F}_{t-1}^{k,\ell_k})$ 
+          and $\mathbf{F}_t^{k,\ell_k}$ is $k$th factor with lag $\ell_k$, $k=1,\ldots,K$, 
+          $\ell_k=0,\ldots,L_k$. 
+          $\ell_k=0$ means no lagging.
+          
+	      \item \mcode{'RHO\_EQ', 'RA_EQ', 'RFAC_EQ'} are corresponding equality constraints of above.
+	      \end{enumerate*}
+      \end{itemize*}
+      Depending on different factors, different methods may have different performances. 
+\end{enumerate*}
+
+A final note on \mcode{optimize}.
+\mcode{optimize} provide mathematical ways to optimally combine factors.
+It is easy to substitute our intuition for the mathematics, but this can lead to trouble.
+We should instead verify that the mathematics and our intuition agree: 
+otherwise, either our intuition is wrong or our model is inadequate.
+If our intuition and the mathematics of a model do not agree,
+we should seek a reconciliation before proceeding.
+
+\funentry{normalize}
+  Normalize factors. Different methods allowed.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   score = normalize(factor, 'option_name', option_value, ...)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+      \item[factor]  (\myfints{}) Factor to be normalized.
+      \item['option\_name', option\_value, ...] (\myfints{}) Options providing additional information for normalization.
+         \begin{argdesc}
+            \item[method] Specifies which method used to do the normalization. 
+                 Now two methods are allowed:
+                 \begin{itemize}
+                    \item \mcode{'norminv'}
+                    \item \mcode{'zscore'}
+                 \end{itemize}
+                 \emph{Default} is \mcode{'zscore'}.
+            \item[mode] Indicates if reverse the factor ranking orders. Two possible values:
+                  \begin{itemize}
+                    \item \mcode{'ascend'} The normalized result has the same ranking as the original.
+                    \item \mcode{'descend'} The ranking of the normalized result is reversed.
+                  \end{itemize}
+                  \emph{Default} is \mcode{'ascend'}, which corresponds to 'the-higher-the-better' factors.
+            \item[weight] (\myfints{} or ordinary matrix compatible to the \mcode{factor}) 
+                  Indicates if corresponding elements in \mcode{factor} belong to the universe.
+                  Weight value of 0 or \mcode{NaN} will be excluded the normalization process.
+                  Other weight values treat the same.
+                  \emph{Default} all element in \mcode{factor} will be involved.
+            \item[GICS]  (\myfints{} or ordinary matrix compatible to the \mcode{factor})
+                  If provided, normalization will also be \emph{neutralized}.
+                  The value of \mcode{GICS} must be integers.
+            \item[level] \input{gicslevel}
+         \end{argdesc}
+   \end{argdesc}
+
+\funentry{neutralize}
+  Neutralizes specified function.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   res = neutralize(factor, GICS, fun)
+   res = neutralize(factor, GICS, fun, level)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+      \item[factor] (\myfints{}) Factor on which neutralization is performed.
+      \item[GICS]   (\myfints{} or ordinary matrix compatible to the \mcode{factor})
+                    Neutralization is based on this parameter. 
+                    If not provided, \mcode{neutralize} simply perform \mcode{fun} on \mcode{factor}.
+                    The value of \mcode{GICS} must be integers.
+
+      \item[fun]    (function handle) Specifies operation to be neutralized.
+                    It should be an ordinary \matlab{} function of form:
+   \begin{lstlisting}[numbers=none]
+         function out_matrix = fun(input_matrix)
+   \end{lstlisting}
+                    where \mcode{input_matrix} and \mcode{out_matrix} are ordinary matrices with the
+                    same dimension. 
+                    \emph{Whatever it to do, \mcode{fun} should ignore \mcode{NaN}s.}
+       \item[level] \input{gicslevel}
+   \end{argdesc}
+
+\outarg
+   \begin{argdesc}
+      \item [res]  (\myfints{}) Result returned.
+   \end{argdesc}
+
+\funentry{csregress}
+   Cross-sectional regression of a factor (\mcode{yfactor}, regressor) against a group of other factors
+  (\mcode{xfactors}, regressands).
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   [beta, epsilon, std_beta, R2, mse] = csregress(yfactor, xfactors, 'option_name', option_value, ...)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item[yfactor]   (\myfints{}) $T\times N$, factor used as regressor (dependent variable). 
+                    $T$ is the number of periods (or time points), 
+                    $N$ the number of observations at each period.
+   \item[xfactors]  (a cell vector of \myfints{}) Contains $K$ \myfints{},
+                    each is $T\times N$, 
+                    factors used as regressands (independent variables)
+   \item['option\_name', option\_value, ...] named arguments providing additional information.
+        \begin{argdesc}
+        \item[weight] (\myfints{} or ordinary matrix compatible to the \mcode{yfactor}) 
+                      $T\times N$. 
+                      If provided, Weighted Least square will be used to solve the regression problem;
+                      otherwise, ordinary least square (weight matrix is identity).
+        \end{argdesc}
+   \end{argdesc}
+
+  \mcode{yfactor} and elements of \mcode{xfactors} must be aligned. 
+  If \mcode{weight} provided, it also must be aligned to \mcode{ycode} 
+  (in case of \mcode{weight} is a \myfints{}) or compatible to it 
+  (in case of \mcode{weight} is a matrix).
+  The regression is performed at each time period as
+  \[
+      w_i^{\frac{1}{2}}\,y_i = w_i^{\frac{1}{2}}\,\sum_{j=1}^{K} \beta_{j}x_{ij} + \epsilon_i, \quad i=1,\ldots,N
+  \]
+  where $N$ is the number of cross-sectional observations (i.e., number of fields in \mcode{yfactor})
+  and each of \mcode{xfactors}, $K$ is the number of elements in \mcode{xfactors},
+  $y_i, i=1,\ldots,N$ is a row from \mcode{yfactor}, 
+  $w_i, i=1,\ldots,N$ is a row from \mcode{weight}, 
+  $x_{i,j}, i=1,\ldots,N$ is the corresponding row from \mcode{xfactors\{j\}}.
+
+\iffalse
+  In matrix form, the regression is (at a period)
+  \[
+     \bm{W}^{\frac{1}{2}}\bm{y} = \bm{W}^{\frac{1}{2}}\bm{X}\bm{\beta} + \bm{\epsilon},
+  \]
+  where
+  \begin{equation*}
+     \bm{W}^{\frac{1}{2}} = \begin{pmatrix}
+                             \sqrt{w_1} & &\\
+                              &\ddots &\\
+                              & &\sqrt{w_N} \\
+                            \end{pmatrix},\;
+     \bm{y} = \begin{pmatrix} y_1\\
+                              \vdots\\
+                              y_N\\
+              \end{pmatrix},\;
+     \bm{X} = \begin{pmatrix}
+               x_{11} & \cdots & x_{1K}\\
+               \vdots & \ddots & \vdots\\
+               x_{N1} & \cdots & x_{NK}\\
+              \end{pmatrix},\;
+     \bm{\beta} = \begin{pmatrix}
+                  \beta_1\\
+                  \vdots\\
+                  \beta_K
+                  \end{pmatrix}
+     \bm{\epsilon} = \begin{pmatrix}
+                     \epsilon_1\\
+                     \vdots\\
+                     \epsilon_N
+                    \end{pmatrix},
+  \end{equation*}
+\fi  
+
+  If you want to include a constant term in regression, you should provide it as a \myfints{} element
+  in \mcode{xfactors}. A simple way to do this is
+  \begin{lstlisting}[numbers=none]
+   constant_x = yfactor;
+   constant_x(:,:) = 1;
+  \end{lstlisting}
+  Then you can add this constant \myfints{} into \mcode{xfactors}.
+
+\outarg
+   \begin{argdesc}
+   \item[beta]     (\myfints{}) $T\times K$, corresponding to the estimated coefficients of $\beta$.
+   \item[epsilon]  (\myfints{}) $T\times N$, regression residual.
+   \item[std\_beta](\myfints{}) $T\times K$, stdandard error of \mcode{beta}.
+   \item[R2]       (\myfints{}) $T\times 1$, $R^2$, goodness of fit measure.
+   \item[mse]      (\myfints{}) $T\times 1$, Mean-Squared-Error of regression,
+                   element at time $t$ corresponding to the regression at that time. 
+   \end{argdesc}
+
+A common use of \mcode{csregress} is regressing stock returns on a group of factors
+to get factor returns. In this case, stock return is \mcode{yfactor},
+every factor is a element (\myfints{} object) of \mcode{xfactors}.
+
+\funentry{csqtrtn}
+    Calculate quantile returns based on given signal.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   [qtrtn, qtweight] = csqtrtn(signalfts, returnfts, 'option_name', option_value,...)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+	   \item[signalfts] (\myfints{} object) time series of signal values
+	   \item[reutrnfts] (\myfints{} object) time series on which quantile returns are going to be calculated
+	   \item['option\_name', option\_value,...] optional arguments.
+                     Available options are:
+		\begin{argdesc}
+			  \item[weight] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts},
+			               indicates the weights for corresponding elements in \mcode{returnfts},
+			              \emph{default} equal weight
+		    \item[univ] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts}, 
+                     indicating
+		               whether the stock is in the universe at each time point.
+		               if specified, the quintile returns will be
+		               only calculated for stocks within the universe at each point in time. 
+			  \item[GICS] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts},
+			             contains GICS code corresponding to elements in \mcode{returnfts}.
+                      Value of \mcode{GICS} must be integer.
+                      If provided, the quantile spreads are calculated within each sector identified by \mcode{GICS};
+			             if \emph{omitted}, the quantile return are calculated on the whole universe.
+		    \item [qtile] Specifies the quantile points. \emph{Default} is quintile (i.e., [0, 0.2, 0.4, 0.6, 0.8, 1])
+		    \item [level] \input{gicslevel}
+	   \end{argdesc}	
+
+	   The quantile returns are calculated as weighted average of part of
+	   \mcode{returnfts} between certain quantiles.
+	\end{argdesc}
+
+\outarg
+   \begin{argdesc}	
+	   \item[qtrtn] (\myfints{} object)  time series of quantile returns
+	   \item[qtweight] (cell vector of \myfints{} objects) time series of quantile portfolio weights
+   \end{argdesc}
+
+
+\funentry{csqtspread}
+    Calculate quantile spreads based on given signal.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   [ofts, weight] = csqtspread(signalfts, returnfts, 'option_name', option_value,...)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+	   \item[signalfts] (\myfints{} object) time series of signal values
+	   \item[reutrnfts] (\myfints{} object) time series on which quantile
+	                  spreads are going to be calculated
+	   \item['option\_name', option\_value,...] optional arguments controlling
+	                  how the portfolio be constructed.
+                     Available options are:
+		\begin{argdesc}
+			  \item[window] an integer, indicates the window size when calculating
+			               moving sums, \emph{default} \mcode{inf}
+			  \item[weight] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts},
+			               indicates the weights for corresponding elements in \mcode{returnfts},
+			              \emph{default} equal weight
+		     \item[univ] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts}, 
+                     indicating
+		               whether the stock is in the universe at each time point.
+		               If specified, the quintile spreads will be
+		               only calculated for stocks within the universe at each point in time. 
+			  \item[GICS] a \myfints{} object or an ordinary matrix compatible to \mcode{returnfts},
+			             contains GICS code corresponding to elements in \mcode{returnfts}.
+                      Value of \mcode{GICS} must be integer.
+                      If provided, the quantile spreads are calculated within each sector identified by GICS;
+			             if \emph{omitted}, the quantile spreads are calculated on the whole universe.
+           \item[level] \input{gicslevel}
+		     \item[long] a number between [0,1], indicating long stocks
+                     with returns greater than 80\% of quantile returns among all stocks. 
+                     Default is 0.8.
+		     \item[short] a number between [0,1], indicating short stocks
+                     with returns less than 20\% quantile returns among all stocks. 
+                     Default is 0.2
+	   \end{argdesc}	
+%
+	   The quantile spreads are calculated as weighted average of part of
+	   \mcode{returnfts} greater than \mcode{long} quantile, minus weighted average of
+	   part of \mcode{returnfts} less than \mcode{short} quantile. 
+     
+      Clearly, \emph{by default}, it's quintile spread (Q5$-$Q1).
+      For \emph{long-only} portfolio, just set 'long' 0 and short 1. 
+	\end{argdesc}
+
+\outarg
+   \begin{argdesc}	
+	   \item[ofts] (\myfints{} object)  time series of quantile spreads and its moving sum
+	   \item[weight] (\myfints{} object) time series of weight associated with \mcode{returnfts}
+   \end{argdesc}
+
+
+\funentry{tsplot}
+Visulizes a \myfints{} object.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   h = tsplot(fts, 'parameter',value,...)
+   \end{lstlisting}
+
+\inarg
+\begin{argdesc}
+\item[fts] (\myfints{}) Object to be plotted. 
+\item ['parameter',value,$\ldots$] pairs acting as named arguments providing additional information for plotting the time series. 
+      \begin{argdesc}
+      \item[group] a matrix, where 
+         \begin{itemize}
+           \item number of columns is equal to the number of time series in \mcode{fts}
+                 (i.e., number of fields (columns) of \mcode{fts} when it's a matrix);
+           \item number of rows indicates how many subplots be drawn in the plot;
+           \item its elements can be 0 (not draw the corresponding series in the subplot),
+                 1 (draw the corresponding series in the corresponding subplot with y-axis on the left),
+				 or -1 (draw the corresponding series in the corresponding subplot with y-axis on the right).
+         \end{itemize}
+       For example, for a 3-column \mcode{fts} which contains 3 time series,
+       \mcode{group} can be 
+  \begin{lstlisting}[numbers=none]
+  [1 0 0; 0 1 0; 0 0 1]
+  \end{lstlisting}
+       which means the plot will have 3 subplots and every plot for a series. 
+       Also \mcode{group} can be \mcode{[1 1 1]} which means drawing all 3 series in one subplot. \par
+       Other examples of valid values for \mcode{group}:
+  \begin{lstlisting}[numbers=none]
+  [1 0 1; 0 1 1]                % 2 sub plots where the 3rd series used in both 
+  [1 0 0; 1 0 0; 1 0 0; 1 0 0]  % The same 4 subplots where only 1st series used
+
+  \end{lstlisting}
+       \emph{Default} value 
+       is row vector with all elements being one and length equal to number of column of \mcode{fts}; 
+       i.e., all series will be drawn in one plot.
+      \item[title]      A string or a cell string vector used as the caption of plots.
+                        \begin{itemize}
+                         \item If it is a string, all subplots will use it as caption;
+                         \item if it is a vector, the length of it should be equal to the number of groups (implicitly specified by \mcode{group})
+                               or 1 (all subplots share the same title as caption.)
+                         \item If not provided, no caption will be shown in the plot or subplots.
+                        \end{itemize} 
+      \item[ylabel]     A string or a cell string vector used as the label for y-axis of plots. 
+	                    The number of rows of the cell should be 1 (will be expanded to the number of subplots) or equal to number of subplots implied by \mcode{group};
+						the number of columns of the cell can be 1 (only for left y-axis) or 2 (for left- and right-y axes).
+						Right-y axes only exist when -1 exists in \mcode{group}; otherwise, the second column is useless.
+      \item[ycolor]     A cell of 3-element (representing RGB color) vectors like 
+  \begin{lstlisting}[numbers=none]	  
+	  {[1 0 0] [0 1 0]; [1 0.4 0] [0 0 1]}
+  \end{lstlisting}
+	                    used as the color for y-axis of plots. 
+	                    The number of rows of the cell should be 1 (will be expanded to the number of subplots) or equal to number of subplots implied by \mcode{group};
+						the number of columns of the cell can be 1 (only for left y-axis) or 2 (for left- and right-y axes).
+						Right-y axes only exist when -1 exists in \mcode{group}; otherwise, the second column is useless.
+      \item[notes]      A string or a cell string vector that will be shown just below every subplot as notes. 
+                        Its format is similar with \mcode{title}.
+      \item[dateformat] A string specifying date format shown along the x-axis. 
+                        Default is \mcode{'yy-mm'}.
+      \item[drawfun]    A cell vector of function handles specifying how data be plotted 
+                        (such as \mcode{@bar}, \mcode{@plot}, etc.) 
+                        It can be any length since it will be used rotatively.
+                        \emph{Default} is \mcode{\{@plot\}}, i.e., every series will be drawn as a curve.
+      \item[style]      A cell string vector specifying line style to be drawn in plots. 
+                        Its can be of any length since it will be used rotatively,
+                        but need to be properly corresponding to \mcode{drawfun};
+                        every element of the vector can be any form the corresponding \mcode{drawfun} allowed.\par
+                        \emph{Default value} is \mcode{\{'-b', '-g', '-r', '-k', '-c', '-m', '-y'\}},
+                        meaning solid line with different colors and line width is \matlab's default value.
+                        This is appropriate since default \mcode{drawfun} is \mcode{@plot}.\par
+                        More sophisticated example is \par
+                        \mcode{\{\{'-b', 'linewidth', 2\}, \{'-.', 'Color', [1 0.4 0], 'Marker', '+'\}\}}. \par
+                        Note that \mcode{[1 0.4 0]} is the ING \textcolor{ingorange}{\textbf{orange}}.
+                        See \matlab{} help on specific draw functions about valid properties. 
+      \item[ymax]       a scalar or vector specifying maximum value of y-axis. 
+                        If it is a scalar, every subplot will have the same \mcode{ymax}; 
+                        otherwise its length must be the same as number of subplots implicitly specified by \mcode{group},
+                        in this case every element corresponds to a subplot.\par
+                        If not provided (\emph{default}) or is \mcode{NaN}, 
+                        the function will automatically use maximum value of series used in a subplot 
+                        as \mcode{ymax} for that subplot.
+      \item[ymin]       Similar as \mcode{ymax}, except it is minimum value of y-axis. 
+      \item[hornlineposn] a vector specifying horizontal lines shown in \emph{every} subplot. 
+                        So the value of its elements are treated as y-coordinates. 
+                        The length of the vector is the number of lines to be drawn.
+                        These line will shown in red color with width of 1.
+      \item[vertlineposn] Similar with \mcode{hornlineposn} except it is for vertical line. 
+                        The value of its elements are treated as x-coordinates. 
+      \item[legend]    A cell used to control how legends be plotted. 
+                         \begin{itemize}
+                         \item If it only has one element (i.e., one string), all the subplots will share the same legends.
+                         \item Otherwise, its length should be equal to the number of subplots implicitly specified by \mcode{group}.
+                         \end{itemize}
+                         Examples:\par
+                         \mcode{\{\{'Universe', 'Sector'\}\}}, will be used in every subplot,
+                         or \mcode{\{'Universe', 'Sector'\}}, 
+                         where \mcode{'Universe'} will be used in first subplot, 
+                         and \mcode{'Sector'} in second subplot, 
+                         suppose only 2 suplots be specified by \mcode{group} (otherwise an error occurs).
+                         
+     \item[layout]    A $1\times2$ vector specifying the subplot layout. For example,
+                      \mcode{[3,2]} means the there are total of 6 ($3\times 2$) sub-plots,
+                      arranged in 3 rows - 2 columns manner 
+                      and counted from left to right, then top to bottom.
+                      The number of subplot determined by \mcode{layout} must be great than or equal to
+                      the number of groups implied by \mcode{group}.
+                      Default is \mcode{[<number of group>,1]}, meaning number of subplots equal to number of groups,
+                      and every subplot holds a whole line.
+     \item[range]     A cell vector of length equal to number of subplots (implicitly specified by \mcode{group}),
+                      with each element is a vector or matrix, specifying the position and area the subplot corresponding to group
+                      (corresponding to) will hold. 
+                      Default is \mcode{1,2,3,...<number of group>}, meaning the $i$th group occupies the $i$th subplot.
+
+                      For better understanding of \mcode{layout} and \mcode{range}, refer \matlab{}'s help on \mcode{subplot}.
+	 \item[figure]    Specifies a figure handle on which the plots will be ploted.
+	                  If not specified (which is default), a new figure will be created and used.
+					  Specifying an exist figure handle, so we can draw on the same figure with different \mcode{tsplot} calls
+					  (by specifying the same \mcode{layout} and different \mcode{range}).
+	 \item[orientation] Can be  \mcode{portrait} or \mcode{landscape}. Default is \mcode{portrait}.
+    \end{argdesc}
+\end{argdesc}
+
+\outarg
+\hspace{0.5cm} Return the figure handle it plotted.
+
+\fundesc{Examples:}
+
+In its simplest form, this function can be called as
+\begin{lstlisting}[numbers=none]
+   tsplot(fts)
+\end{lstlisting}
+Every field in \mcode{fts} will be treated as a series and drawn together in one plot using default line style, 
+without caption and y-axis label, and x-axis shown with dates in format of \mcode{'yy-mm'}.
+
+\begin{lstlisting}[numbers=none]
+   tsplot(fts, 'group', [1 0 0; 0 1 0, 0 0 1])
+\end{lstlisting}
+Suppose \mcode{fts} has 3 field (3 series), 
+then this call will create a figure with 3 subplots, every subplot draws a series with default specifications.
+
+\begin{lstlisting}[numbers=none]
+   tsplot(fts, 'group', [1 0 0; 0 1 1], 'style', {'-g', {'.r', 'linewidth', 1}})
+\end{lstlisting}
+Suppose \mcode{fts} has 3 field (3 series),
+then this call will create a figure with 2 subplots: the first draws the first column in \mcode{fts},
+the second draws two line corresponding to the second and third column in \mcode{fts}, 
+and in second subplot, the line corresponding to the third column of \mcode{fts} will be draw in dotted red line of width 1.
+
+The \emph{font shape}, \emph{font size} and \emph{text color}
+(and more, such as Greek letters, formulas typesetting) in any text-type options 
+(title, labels, notes, legends, etc.)
+of plots (or subplots) can also be changed 
+by mixing \TeX{} directives in the string.
+Suppose you want add some notes in a figure, set note string as
+\begin{lstlisting}[numbers=none]
+   note = '\fontsize{12}\bf\color[rgb]{1 .4 0}This is a note example.';
+\end{lstlisting}
+This set the note contents \mcode{'This is a note example.'}, 
+{\large{}font size 12}, font shape \textbf{bold face}, font color \textcolor{ingorange}{orange}.
+For more \TeX{} directives, see \matlab{} help on \texttt{text properties}.
+Then you can call plot as normal:
+\begin{lstlisting}[numbers=none]
+   tsplot(fts, 'group', [1 0 0; 0 1 0, 0 0 1], 'notes', note);
+\end{lstlisting}
+In this example, there will be 3 subplots;
+given only one note string, the same note
+will be displayed at the bottom of each subplot.
+If you want to different notes for different subplots,
+just pass 3 notes as a cell vector such as
+\begin{lstlisting}[numbers=none]
+   tsplot(fts, 'group', [1 0 0; 0 1 0, 0 0 1], 'notes', {'note1', 'note2', 'note3'});
+\end{lstlisting}
+
+
+\funentry{mat2fts}
+   Convert data from \matlab's vectors into \myfints{} objects.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   fts = mat2fts(date, val, sid)
+   fts = mat2fts(date, val, sid, fid)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item[date, val] vectors represent dates and corresponding values, receptively.
+   \item[sid]  vector represents individual ids (e.g., securities ids).
+   \item[fid]  (optional) vector represents group ids (e.g., factor ids).
+               If omitted, all data in \mcode{val} belong to the same group.
+   \end{argdesc}
+
+   Note that the sizes of \mcode{date}, \mcode{val}, \mcode{sid} and \mcode{fid}
+   must be agree with each other.
+   The combination of \mcode{date}, \mcode{sid}, \mcode{fid} must be unique.
+   The orders of these vectors are irrelevant (ordering will be done inside \mcode{mat2fts}).
+   
+\outarg
+   \begin{argdesc}
+   \item[fts] a cell vector of \myfints{} object corresponding to each \mcode{fid}.
+              The number of \myfints{} in \mcode{fts} is determined by number of unique values in \mcode{fid},
+              the number of fields in each \myfints{} is determined by number of unique values in \mcode{sid},
+              and number of periods (time points) in each \myfints{} is determined by number of 
+              unique values in \mcode{date}.
+              You can access the \mcode{fid} for each returned \myfints{} in \mcode{fts} by
+                 \mcode{fts\{i\}.desc}.
+   \end{argdesc}
+
+ 
+\funentry{xls2fts}
+   Convert data from Microsoft Excel sheet into \myfints{} objects.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   [fts,...] = xls2fts(fileName, sheetName, dateColRange, sidColRange, valColsRange)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item[fileName]  Name of an Excel document file from which data is read.
+   \item[sheetName] Sheet name inside the \mcode{fileName} excel file.
+   \item[dateColRange] a string, specify a range where data will be used as date. 
+         Range should be in vecor form; i.e., either one row or one column, like \mcode{B2:B10000}.
+   \item[sidColRange] a string, range where data be used as security id.
+         Range should be in vecor form; i.e., either one row or one column, like \mcode{C2:C10000}.
+   \item[valColsRange] a string or cell vector of string, specifies data used as values.
+        Every string corresponds to a final \myfints{} returned.
+   \end{argdesc}
+
+   Note all the range spcified should be agree with each other in dimension.
+   The combination of content from \mcode{dateColRange} and \mcode{sidColRange} must be unique.
+   The occurance order is irrelevant.
+   
+\outarg
+   \begin{argdesc}
+   \item[fts, ...] one or more \myfints{} objects corresponding to each element in \mcode{valColsRanges}.
+              The number of fields in each \myfints{} is determined by number of unique values in \mcode{sidColRange},
+              and number of periods (time points) in each \myfints{} is determined by number of 
+              unique values in \mcode{dateColRange}.
+              You can get the corresponding \mcode{valColsRange} string for each returned \myfints{} in \mcode{fts} by
+                 \mcode{fts\{i\}.desc}.
+   \end{argdesc}
+ 
+
+\subsection{Comparison Operators: \texttt{>=}, \texttt{>}, \texttt{==}, \texttt{$\sim$=}, \texttt{<=}, \texttt{<}}
+
+      These operators perform element-by-element comparison between two \mcode{myfints} objects
+      or one \mcode{myfints} object and an ordinary \matlab{} matrix (or scalar).
+      You can compare two \mcode{myfints} objects like:
+      \footnote{Note that all the factors are derived from \mcode{myfints}, 
+      so these operators also apply to factors.
+      For a complete methods of a class, type \mcode{methods(obj)} or \mcode{methods(class name)}
+      from \matlab{} command window.}
+      \begin{lstlisting}[numbers=none]
+         result= obja > objb;
+      \end{lstlisting}
+      The \mcode{result} is of same type as of \mcode{obja}.
+      You cOan also compare a \mcode{myfints} object with an ordinary matrix or scalar, 
+      as long as they are compatible in term of matrix dimension, like this
+      \begin{lstlisting}[numbers=none]
+         result = 5 > obja;
+      \end{lstlisting}
+         or
+      \begin{lstlisting}[numbers=none]
+         result = obja < 5;
+      \end{lstlisting}
+      In this case, \mcode{result} is of the same type as \mcode{obja}.
+      The general rule for type of returned result is the \mcode{result} 
+      has the same type as of the most left of \mcode{myfints} objects.
+
+      For compare if two myfints object equal as a whole (return a single true or false),
+      you can use \mcode{isequal(ftsa, ftsb)} function, just as for normal \matlab{} matrix.
+
+\subsection{Ordinary Matrix Algebra Operators: \texttt{+, -, *, /, .*, ./}}
+
+     For \myfints, \mcode{*} and \mcode{/} are identical to \mcode{.*} and \mcode{./}, respectively.
+     All other operators have the same meanings as those for \matlab{} matrices. 
+	 All these operators can be used with mixing a \myfints{} object and ordinary matrix in any order.
+
+\subsection{Indexing}
+
+Not only does \mcode{myfints} allow the same indexing methods supported by \matlab's \mcode{fints},
+it also support \matlab's matrix indexing methods.
+The following examples summarize various indexing forms possible.
+
+\begin{itemize*}
+\item index rows (values of all fieldnames on the same date):
+  \begin{lstlisting}[numbers=none]
+     a = fts('01-Apr-2010'); 							
+     a = fts('01-Apr-2010',:);  % equivalent to the line above  
+     a = fts('01-Apr-2010::01-Apr-2011'); 		
+     a = fts({'01-Apr-2010', '01-May-2010', '01-Oct-2010'},:); % must be with ,:
+	 % Below union of dates specified used as index (sequence irrelevent)
+	 a = fts({'2011-01-01::2011-05-31', '2011-03-21', '2009-12:21-2011-01-02'}, :); 
+     a = fts({734100 734150 734200}, :); % numeric in cell used as dates
+	 % Below combination of string & numeric type indexing
+     a = fts({'2011-01-01::2011-05-31', num2cell(now-5:now), '2011-03-21'}, :); 
+     a = fts(5); 		 % numeric in ordinary vector used as positioning index										
+     a = fts(5,:);       % equivalent to the line above
+     a = fts(5:7);         							
+     a = fts(5:7,:);     % equivalent to the line above
+     a = fts([5 7]);                      		
+     a = fts([5 7],:);   % equivalent to the line above
+	 a = fts(logical([1 0 0 1]),:);  % equivalent to fts([1 4],:); logical vector used as TF index
+ \end{lstlisting}
+\item index columns (values of fields on all dates):
+  \begin{lstlisting}[numbers=none]
+     a = fts.fieldname;
+     a = fts(:,'fieldname');
+     a = fts(:,{'fieldname1', 'fieldname2'});
+     a = fts(:,2);
+     a = fts(:,[2:10]);
+  \end{lstlisting}
+\item index columns and rows
+  \begin{lstlisting}[numbers=none]
+     a = fts.fieldname('01-Apr-2010'); 
+     a = fts.fieldname(3:5);
+     a = fts.fieldname(4);
+     a = fts('01-Apr-2010','fieldname3');
+     a = fts(3, 'fieldname2');
+     a = fts({'01-Apr-2010', '01-Apr-2011'}, {'IBM', 'C', 'APPL'});
+     a = fts({'01-Apr-2010', '01-Apr-2011'}, 1:30);
+     a = fts('01-Apr-2010::01-Apr-2011', 1:30);
+     a = fts(2:5, 3:8);
+     a = fts(fts > 0.5);         % return a vector
+     a = fts(fts == anotherfts); % must be aligned 
+     a = fts(matrix);            % must compatible in size and contents
+     a = fts(anotherfts);        % must be aligned and compatible in size and contents
+ \end{lstlisting}
+\item index the whole thing
+  \begin{lstlisting}[numbers=none]
+     fts(:,:);
+     fts('::');
+  \end{lstlisting}
+\item modify \myfints{} object by indexing
+  \begin{lstlisting}[numbers=none]
+     % Remove some dates
+     fts(3:5,:) = [];            
+     fts({'01-Apr-2010', '01-Apr-2011'},:) = []; 
+     % Remove some fields
+     fts.IBM = [];
+     fts(:, 'IBM') = [];
+     fts(:, {'MSFT', 'GOOD'}) = [];
+	 fts(:, '0059AAPL') = [];
+	 fts.('0059AAPL') = [];    % NOTICE this usage when field is not valid matlab identifier
+     fts(:, 3:5) = [];
+  \end{lstlisting} 
+  Removing this way must be about entire rows or columns, otherwise \matlab{} will complain.
+  
+  Assigning to irregular part of a \myfints{} object with compatible data is possible, like
+  \begin{lstlisting}[numbers=none]
+     fts(fts > 0.5) = 0;
+     fts(fts > anotherfts) = -fts(fts > anotherfts); % flip signs
+  \end{lstlisting}
+\end{itemize*}
+   
+  The returned from indexing a \myfints{} object usually still is a \myfints{} object
+  with appropriate dates and fieldnames labeled. 
+  However, for indexing like \mcode{fts>0.5} the returned is ordinary \matlab{} vector
+  since it is irregular. 
+  In fact, this kinds of index mostly used in this way: \mcode{fts(fts>0.5)=100;}
+
+  \mcode{end} can be appeared whenever it is appropriate; 
+  i.e., when idexing with numeric values, like
+  \begin{lstlisting}[numbers=none]
+      a = obja(3:end);
+  \end{lstlisting}
+  return the 3rd to last rows of \mcode{obja} and return a object (\mcode{a}) of the 
+  same type as of \mcode{obja}.
+
+  \emph{The principle} is: when the first dimension is a cell vector or char-string, it is treated as dates, 
+  no matter what's inside (i.e., date strings or numeric dates). 
+  If the first dimension index is a numeric/logical vector, it is treated as position/true-false index.
+
+  \emph{A key difference} between first (date)-dimension and second (field)-dimension index: 
+  no matter what order you specified for dates, dates will always be ordered ascendingly; 
+  while filed sequence will always be the same as you specified in index.
+
+\subsection{Cross-Sectional Statistics}
+
+\funentry{cscorr, csrankcorr, cscorrwt}
+    Calculate the cross sectional correlation time series of two aligned \myfints{}.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   ofts = cscorr(iftsA, iftsB, 'argname', value,...)
+   ofts = csrankcorr(iftsA, iftsB)
+   ofts = cscorrwt(iftsA, iftsB, iftsWt)   
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+	\item[iftsA]	(\myfints{} object) One inputs those cross sectional correlation is to be found
+	\item[iftsB]	(\myfints{} object) One inputs those cross sectional correlation is to be found
+   \item['argname', value,...] specifies one or more optional name/value pairs. 
+        Specify name inside single quotes. 
+        The following table lists valid parameters and their values.
+		   \begin{longtable}[r]{>{\ttfamily}l<{} p{12.6cm}}
+		      \textsf{\textbf{Parameter}} & \textsf{\textbf{Values}}\\
+		      \toprule
+		      \endfirsthead
+		      \textsf{\textbf{Parameter}} & \textsf{\textbf{Values}}\\
+		      \toprule
+		      \endhead
+		      \bottomrule
+		      \endfoot
+		      \bottomrule
+		      \endlastfoot
+           type &	\vspace*{-1.28\baselineskip}
+             \begin{itemize*}
+               \item\mcode{'Pearson'}, (the default) computes Pearson's linear correlation coefficient
+               \item\mcode{'Kendall'}, computes Kendall's $\tau$
+				    \item\mcode{'Spearman'}, computes Spearman's $\rho$
+               \item a matrix or \myfints{} object serveing as weights, calculating weighted correlation.
+                if matrix, must be compatible with size;
+                if \myfints{}, must be aligned with \mcode{iftsA} and \mcode{iftsB}.
+                Parameter \mcode{rows} is not applicable for weighted correlation (if provided, ignored.)\newline
+                \vspace*{-2\baselineskip}
+             \end{itemize*}\\
+           \midrule
+           rows & \vspace*{-1.28\baselineskip}
+             \begin{itemize*}
+              \item \mcode{'all'} (the default) uses all rows regardless of missing values (\mcode{NaN}s)
+              \item \mcode{'complete'} uses only rows with no missing values
+              \item \mcode{'pairwise'} computes $\rho(i,j)$ using rows with no missing 
+                    values in column $i$ or $j$\newline
+              \vspace*{-2\baselineskip}
+             \end{itemize*}\\
+       \end{longtable}
+   \end{argdesc}
+%
+   \mcode{csrankcorr} actually is equivelent to
+   \begin{lstlisting}[numbers=none]
+   ofts = cscorr(iftsA, iftsB, 'type','spearman','rows','complete');
+   \end{lstlisting}
+   and \mcode{cscorrwt} is equivelent to
+   \footnote{Weighted mean is $m[x;w] = (\sum_i w_i*x_i)/(\sum_i w_i)$,
+				  weighted covariance $c[x,y;w] = (\sum_i w_i*(x_i - m[x;w])*(y_i - m[y;w]))/(\sum_i w_i)$,
+				  and then weighted correlation $r[x,y;w] = c[x,y;w]/\sqrt{c[x,x;w]*c[y,y;w]}$.}
+
+   \begin{lstlisting}[numbers=none]
+   ofts = cscorr(iftsA, iftsB, 'type', iftsWt);
+   \end{lstlisting}
+   Both of them are shortcut forms of \mcode{cscorr}.
+
+\outarg
+   \begin{argdesc}
+	 \item [ofts] a \myfints{} object of cross section correlation.
+   \end{argdesc}
+
+\funentry{cscov}
+   Corss-sectional covarance. 
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   ofts=cscov(iftsA, iftsB)               % NaN will be counted
+   ofts=cscov(iftsA, iftsB, 'ignorenan')  % NaN will be excluded 
+   \end{lstlisting}
+
+\funentry{csmax, csmean, csmedian, csstd, cssum, csnorm}
+   Cross-sectional statistics for a \myfints{} object.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   ofts = csmax(fts)
+   ofts = csmean(fts)
+   ofts = cssum(fts)
+   ofts = csmedian(fts)
+   ofts = csstd(fts)
+   ofts = csnorm(fts)
+   \end{lstlisting}
+
+Note all these functions ignore \mcode{NaN} values.
+
+What if you want to a statistics not listed above? 
+Using \mcode{uniftsfun}.
+For example, suppose you want to calculate cross-sectional kurtosis
+for a \myfints{}, simply do this
+\begin{lstlisting}[numbers=none]
+   ofts = uniftsfun(fts, @(x) kurtosis(x,1,2))
+\end{lstlisting}
+See also \matlab's help on \mcode{kurtosis}
+for meanings of other two parameters.
+\medskip
+
+\funentry{ftsmovavg, ftsmovstd, ftsmovsum}
+   Calculate the moving average/standard deviation/summation of a time series.
+   
+\usage
+   \begin{lstlisting}[numbers=none]
+    newFts = ftsmovavg(oldFts, window, ignoreNaN)
+    newFts = ftsmovstd(oldFts, window, ignoreNaN)
+    newFts = ftsmovsum(oldFts, window, ignoreNaN)
+   \end{lstlisting}
+\where
+   \mcode{window} is the number of rows included in every calculation from current time point 
+   backward to previous time point (including current time point).
+   \mcode{NaN}s will be ignored in calculation if \mcode{ignoreNaN = 1}.
+   
+If you want to perform functions other than average/standard deviation/summation,
+use \mcode{ftsmovfun}.
+
+
+\subsection{Third-Dimensional Statistics}
+\funentry{ftsnanmean, ftsnanstd, ftsnansum}
+
+\usage
+   \begin{lstlisting}[numbers=none]
+    ofts = ftsnanmean(ifts1, ifts2, ..., iftsN)
+    ofts = ftsnanstd(ifts1, ifts2, ..., iftsN)
+    ofts = ftsnansum(ifts1, ifts2, ..., iftsN)
+   \end{lstlisting}
+\inarg
+   \begin{argdesc}
+   \item[ifts1, ifts2, ..., iftsN] \myfints{} objects on which specific statistics
+        will be performed.
+        They must be aligned.
+   \end{argdesc}
+
+\outarg
+   \begin{argdesc}
+   \item[ofts] the result of type \myfints{}, compatible with \mcode{ifts1},\ldots,\mcode{iftsN}, etc. 
+   \end{argdesc}
+
+  
+\subsection{Performing Specified Functions on \texttt{myfints}}
+
+\funentry{uniftsfun}
+    Core function performing actions when only one myfints object
+    involved.
+    Acutally the \mcode{csmean}, \mcode{csmax}, etc. just a direct call to
+    this function.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+    ofts = uniftsfun(ifts, fun_handle)
+    ofts = uniftsfun(ifts, fun_handle, fieldname)
+   \end{lstlisting}
+
+\where
+   \begin{argdesc}
+    \item[ifts] \myfints{} object to be operated on
+    \item[fun\_handle] operation to be performed on \mcode{ifts}.
+                 \mcode{fun\_handle} should be a function of \par
+                 \hspace{1.0cm}\mcode{function out\_matrix = fun(in\_matrix)} \par
+                 where the dimension of \mcode{out\_matrix} 
+                 can be different from that of \mcode{in\_matrix};
+                 see explanation for \mcode{fieldname} below in this case.                 
+    \item[fieldname] Specifies what field names should be in the returned
+                 \myfints{} object \mcode{ofts}.
+                 \mcode{fieldname} should be a char vector (representing a string)
+                 or a cell vector of strings. 
+                 The number of field names provided should be 1 (a char
+                 vector or a one-element cell) or matching the result
+                 returned by \mcode{fun\_handle}. 
+
+                 In case of one field name provided and returning 
+                 multiple fields (columns) by \mcode{fun\_handle}, 
+                 the field name will be appended by a counter.
+                 If number of fields names beyond 1 and not matching the 
+                 result of \mcode{fun\_handle} (not equal the number of columns
+                 returned by \mcode{fun\_handle}), 
+                 an error will occur and break the
+                 program execution.
+
+                 By \emph{DEFAULT}, 
+                 the \mcode{fieldname} in \mcode{ifts} will be used.
+                 This is fine if input and output have the same columns.
+                 Otherwise,
+                 user should provide an appropriate \mcode{fieldname}.
+
+                 For most cross-sectional operation,
+                 user should provide a \mcode{fieldname}
+                 since the returned usually 
+                 has less than the original number of columns (mostly only
+                 one column, such as mean, sum, etc. on column dimension)
+                 For most time-series operation,
+                 user don't need to provide \mcode{fieldname} since most of these
+                 operation returned something having the same number of
+                 columns as operand 
+                 (still, consider \mcode{mean}, \mcode{sum} on row dimension).
+ 
+                 Generally speaking, operation along a specified dimension
+                 usually removes that dimension from the result. 
+                 For instance, \mcode{mean(A,1)} will remove row(1st) dimension, 
+                 and \mcode{mean(A,2)} remove the column(2nd) dimension.
+          \item[ofts] result returned. 
+                 Usually, it's still a \myfints{} object
+                 having the similar structure as \mcode{ifts}
+                 (see explanation about \mcode{fieldname} above). 
+                 HOWEVER, in case of 
+                 \textit{the result returned by \mcode{fun\_handle} has different number
+                 of rows as that of inputted \mcode{ifts}},
+                    \begin{itemize*}
+                    \item if the returned row number is 1, 
+                          \mcode{ofts} uses last date in \mcode{ifts} as its date; 
+                    \item  otherwise, return directly the result (type of matrix)
+                           instead of \myfints{} object.
+                    \end{itemize*}
+   \end{argdesc}
+
+\noindent Examples:
+  \begin{lstlisting}
+        function ofts = csmedian(fts)
+            ofts = uniftsfun(fts, @(x)nanmedian(x,2), 'csmedian');
+        end
+        
+        function ofts = cssum(fts)
+            ofts = uniftsfun(fts, @(x)nansum(x,2), 'cssum');
+        end
+  \end{lstlisting}
+
+\funentry{biftsfun}
+    Core function performing actions on at least two \myfints{} objects.
+    \footnote{
+    More \myfints{} objects possible, all depends on \mcode{fun\_handle}.
+    \mcode{csqtspread} is such an example where at most 4 \myfints{}
+    object involved: one for signal, one for return, one for GICS, one for weights.}
+
+\usage
+   \begin{lstlisting}[numbers=none]
+    ofts = biftsfun(lhs, rhs, fun_handle)
+    ofts = biftsfun(lhs, rhs, fun_handle, fieldname)
+   \end{lstlisting}
+\where
+    \begin{argdesc}
+    \item[lhs, rhs] operands (left and right in case of \mcode{fun\_handle} being 
+                 bi-operand operator) on which \mcode{fun\_handle} to be performed.
+                 One of them surely is \myfints{} object (otherwise \matlab{}
+                 WON'T call this function). The other can be anything
+                 \mcode{fun\_handle} allowed (e.g., a scalar, matrix, or \myfints{}
+                 object, etc.)
+                 \mcode{lhs} and \mcode{rhs} must be compatible in the sense of:
+                   \begin{itemize*}
+                   \item if both are \myfints{} objects, \mcode{iscompatible} returns \mcode{true}
+                   \item if only one of them is of type \myfints{}, the matrix
+                     form of them are allowed by \mcode{fun\_handle}
+                   \end{itemize*}
+    \item[fun\_handle] operation to be performed on \mcode{lhs} and \mcode{rhs}.
+                The function pointed to by \mcode{fun\_handle} should be of form \par
+                \hspace{1.0cm} \mcode{function out\_matrix = fun(in\_matrixA, in\_matrixB)}\par
+                where \mcode{in\_matrixA} and \mcode{in\_matrixB} have the same dimension,
+                and \mcode{out\_matrix} can be different of dimension from them.
+                See explanation for \mcode{fieldname} below.
+    \item[fieldname] Specifies what field names should be in the returned
+                 \myfints{} object \mcode{ofts}.
+                 \mcode{fieldname} should be a char vector (representing a string)
+                 or a cell vector of strings. 
+                 The number of field names provided should be 1 (a char
+                 vector or a one-element cell) or matching the result
+                 returned by \mcode{fun\_handle}. 
+
+                 In case of one field name provided and returning 
+                 multiple fields (columns) by \mcode{fun\_handle}, 
+                 the field name will be appended by a counter.
+                 If number of fields names beyond 1 and not matching the 
+                 result of \mcode{fun\_handle} (not equal the number of columns
+                 returned by \mcode{fun\_handle}), 
+                 an error will occur and break the
+                 program execution.
+
+                 By \emph{DEFAULT}, 
+                 the \mcode{fieldname} in \mcode{ifts} will be used.
+                 This is fine if input and output have the same columns.
+                 Otherwise,
+                 user should provide an appropriate \mcode{fieldname}.
+          \item[ofts] result returned. 
+                 Usually, it's still a \myfints{} object
+                 having the similar structure as \mcode{ifts}
+                 (see explanation about \mcode{fieldname} above). 
+                 HOWEVER, in case of 
+                 \textit{the result returned by \mcode{fun\_handle} has different number
+                 of rows as that of inputted \mcode{ifts}},
+                    \begin{itemize*}
+                    \item if the returned row number is 1, 
+                          \mcode{ofts} uses last date in \mcode{ifts} as its date; 
+                    \item  otherwise, return directly the result (type of matrix)
+                           instead of \myfints{} object.
+                    \end{itemize*}
+      \end{argdesc}
+
+
+\funentry{multiftsfun}
+   Perform an element-by-element operation on multiple \myfints{} objects.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   ofts = multiftsfun(ifts1, ifts2, ..., iftsN, fun_handle)
+   \end{lstlisting}
+
+\inarg
+   \begin{argdesc}
+   \item[ifts1, ifts2, ..., iftsN] \myfints{} objects on which operation specified by
+        \mcode{fun\_handle} will be performed.
+        They must be aligned.
+        In the following, we suppose each of them is of size $T\times N$.
+   \item[fun\_handle] actions to be performed on these \myfints{}.
+        The function pointed by \mcode{fun\_handle} should be of from\par
+        \hspace{1.0cm}\mcode{function out\_2D\_matrix = fun(in\_3D\_array)}\par
+        where \mcode{in\_3D\_array} is of size $T\times N\times K$ and $K$ 
+        corresponds to the number of \myfints{} inputted as parameters of
+        \mcode{multiftsfun}, 
+        and \mcode{out\_2D\_matrix} is of $T\times N$.
+        For example, if you want to perform a element-by-element summation among
+        a group of \myfints{}, you may set \mcode{fun\_handle} as \par
+        \hspace{1.0cm}\mcode{fun\_handle = @(x) sum(x,3)}\par
+        and keep in mind that \mcode{x} is a 3D matrix. 
+   \end{argdesc}
+\outarg
+   \begin{argdesc}
+   \item[ofts] the result of type \myfints{}, compatible with \mcode{ifts1},\ldots,\mcode{iftsN}, etc. 
+   \end{argdesc}
+
+\noindent Example:
+\begin{lstlisting}
+function sfts = ftsnansum(varargin)
+    sfts = multiftsfun(varargin{:}, @(x)nansum(x,3));
+end
+\end{lstlisting}
+
+\funentry{ftsmovfun}
+   Calculate the moving statistics (e.g., moving average) of a time series.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   ofts = ftsmovfun(ifts, window, fun_handle)
+   ofts = ftsmovfun(ifts, window, fun_handle, fieldname)
+   \end{lstlisting}
+\inarg
+   \begin{argdesc}
+   \item[ifts] (\myfints{} object) 
+   \item[window] size of moving window.
+         If windows is \mcode{inf}, then it's the expanding window.
+   \item[fun\_handle] operation to be performed in moving manner.
+        It should be like \par
+        \hspace{1.0cm}\mcode{function out\_matrix = fun(in\_matrix)}\par
+        and keeping in mind that \mcode{in\_matrix} is the current moving part matrix.
+        The number of columns of returned \mcode{out\_matrix}
+        can be different from that of \mcode{in\_matrix}.
+        The row numbers, however, must be 1
+        (otherwise, it'll be confused where's the moving comes from).
+        See explanation for \mcode{fieldname} below.
+   \item[fieldname] Specifies what field names should be in the returned
+                 \myfints{} object \mcode{ofts}.
+                 \mcode{fieldname} should be a char vector (representing a string)
+                 or a cell vector of strings. 
+                 The number of field names provided should be 1 (a char
+                 vector or a one-element cell) or matching the result
+                 returned by \mcode{fun\_handle}. 
+
+                 In case of one field name provided and returning 
+                 multiple fields (columns) by \mcode{fun\_handle}, 
+                 the field name will be appended by a counter.
+                 If number of fields names beyond 1 and not matching the 
+                 result of \mcode{fun\_handle} (not equal the number of columns
+                 returned by \mcode{fun\_handle}), 
+                 an error will occur and break the
+                 program execution.
+
+                 By \emph{DEFAULT}, 
+                 the \mcode{fieldname} in \mcode{ifts} will be used.
+                 This is fine if input and output have the same columns.
+                 Otherwise,
+                 user should provide an appropriate \mcode{fieldname}.
+   \end{argdesc}
+\outarg
+   \begin{argdesc}
+   \item [ofts] the resulting \myfints{} object.
+   \end{argdesc}
+
+\noindent Examples:
+   \begin{lstlisting}
+function newFts = ftsmovsum(oldFts, window, ignoreNaN)
+if nargin < 3
+    ignoreNaN = 1;
+end
+
+if ignoreNaN
+    fun = @(x) nansum(x,1);
+else
+    fun = @(x) sum(x,1);
+end
+
+newFts = ftsmovfun(oldFts, window, fun);
+   \end{lstlisting}
+
+In \mcode{ftsmovsum}, if \mcode{window == inf}, then it actually calculates
+cumulated sum.
+ 
+\funentry{bsxfun\label{sec:bsxfun}}
+  Apply element-by-element binary operation to two \mcode{myfints} or
+  a \mcode{myfints} and an array with singleton expansion enabled.
+
+\usage
+   \begin{lstlisting}[numbers=none]
+   C = bsxfun(fun,A,B)
+   \end{lstlisting}
+
+\where
+   \begin{argdesc}
+   \item[A,B] operands. at the least one of them is a \myfints{} object 
+        (otherwise \matlab{} won't be here); the other can be an ordinary 
+        \matlab{} matrix or \myfints{} object.
+   \item[fun] a function handle, and can either be an \mcode{M}-file function or 
+        one of the following built-in functions:
+		   \begin{longtable}[c]{>{\ttfamily}l<{} p{8cm}}
+		      \textsf{\textbf{Function}} & \textsf{\textbf{Operation}}\\
+		      \toprule
+		      \endfirsthead
+		      \textsf{\textbf{Function}} & \textsf{\textbf{Operation}}\\
+		      \toprule
+		      \endhead
+		      \bottomrule
+		      \endfoot
+		      \bottomrule
+		      \endlastfoot
+				@plus    & Plus\\
+				@minus   & Minus\\
+				@times   & Array multiply\\
+				@rdivide & Right array divide\\
+				@ldivide & Left array divide\\
+				@power   & Array power\\
+				@max     & Binary maximum\\
+				@min     & Binary minimum\\
+				@rem     & Remainder after division\\
+				@mod     & Modulus after division\\
+				@atan2   & Four quadrant inverse tangent\\
+				@hypot   & Square root of sum of squares\\
+				@eq      & Equal\\
+				@ne      & Not equal\\
+				@lt      & Less than\\
+				@le      & Less than or equal to\\
+				@gt      & Greater than\\
+				@ge      & Greater than or equal to\\
+				@and     & Element-wise logical AND\\
+				@or      & Element-wise logical OR\\
+				@xor     & Logical exclusive OR\\
+  		   \end{longtable}
+  		   
+  		   If an \mcode{M}-file function is specified, 
+  		   it must be able to accept either two column vectors of the same size, 
+  		   or one column vector and one scalar, and return as output a column vector of the size as the input values.
+   \end{argdesc}
+
+   \mcode{bsxfun} applies an element-by-element binary operation to \mcode{A} and \mcode{B}, 
+   with singleton expansion enabled, 
+   The operation performed \emph{irrespective of the compatibility of \mcode{A} and \mcode{B}}
+   when both of them are \myfints{} objects, so long as their dimensions agree.
+   By ``agree'', we mean each dimension of \mcode{A} and \mcode{B} must either be equal to each other, 
+   or equal to 1. 
+   Whenever a dimension of \mcode{A} or \mcode{B} is singleton (equal to 1),
+   the array is virtually replicated along the dimension to match the other array. 
+   The array may be diminished if the corresponding dimension of the other array is 0.
+   
+   The result returned usually still is a \myfints{} object,
+   with dates and field names match that of first suitable in \mcode{A} and \mcode{B} (in order of occurrence in argument list).
+   If no matched dates found with the result, the result returned in matrix form.
+   It will be an error no matched field names found with the result.
+   (However, if the number of field names found is 1, the name will be appended with a counter
+   up to the number of columns of result as the result's field name).
+
+
+\subsection{Field Operations}
+This section lists function related to manipulating \myfints{}' fields.
+
+\begin{lstlisting}[numbers=none]
+    fnames = fieldnames(fts, 1)          % return field names
+    fnames = fieldnames(fts, 0)          % return field names, incl. freq, dates, desc
+
+    ret = getfield(fts, fids)            % => fts(:,flds)
+    ret = getfield(fts, fids, dates)     % => fts(dates,flds)
+
+    fts = setfield(fts,flds,val)         % => fts(:,flds) = val
+    fts = setfield(fts,flds,dates,val)   % => fts(dates, flds) = val
+
+    fts = extfield(fts, flds)            % => fts = fts(:,flds);
+    fts = rmfield(fts, rmflds)           % => fts = fts(:, setdiff(fieldnames(fts,1),rmflds))
+
+    fts = chfield(fts,oldnames,newnames) % change field names; newnames 1-to-1 oldnames
+
+    isfld = isfield(fts, fldname)        % check if fldname is a field of fts
+
+    fts = padfield(fts, flds)            % NOT => fts = fts(:,flds), padding new fields with NaNs
+    fts = padfield(fts, flds, padStuff)  % NOT => fts = fts(:,flds), padding new fields with padStuff
+\end{lstlisting}
+
+Note that \mcode{fts = padfield(fts, flds, padStuff)} is not equivalent to \mcode{fts = fts(:,flds)}; 
+it allows flds not be existing fields of \mcode{fts}, in which case new fields will be added to fts 
+with values being \mcode{padStuff}
+which by default is \mcode{NaN}.
+
+\subsection{Resampling}
+\funentry{convertto, toannual, tosemi, toquarterly, tomonthly, toweekly, todaily}
+\begin{lstlisting}[numbers=none]
+   ofts = convertto(ifts, freq, 'argname', argvalue, ...)
+	ofts = toannual(ifts, 'argname', argvalue, ...)
+	ofts = tosemi(ifts, 'argname', argvalue, ...)
+	ofts = toquarterly(ifts, 'argname', argvalue, ...)
+	ofts = tomonthly(ifts, 'argname', argvalue, ...)
+	ofts = toweekly(ifts, 'argname', argvalue, ...)
+	ofts = todaily(ifts, 'argname', argvalue, ...)
+\end{lstlisting}
+
+\where
+    \mcode{argname} and \mcode{argvalue} can be:
+	\input{freqparam}
+	
+	There is an additional named argument.
+	\input{calcmethod}
+	
+
+\subsection{List of Other Functions}
+Some are new, most have the same signatures as those of \matlab's financial toolbox.
+{\ttfamily
+    \begin{itemize}
+	\item not($\sim$) \textnormal{and} power($.$\^{})
+	\item isnan, isinf
+	\item log, log10, log2
+	\item exp
+	\item abs, diff, cumsum\\
+	      \textnormal{All function above (from \mcode{not}) return another \myfints{} object.}
+	\item max, min, mean, std \\
+	      \textnormal{Functions below return a structure, one evidence of inconsistence in \matlab's fints.}
+	\item tsmovavg, macd \\
+	      \textnormal{These two functions also implemented on ordinary matrix.}
+	\item var, cov, corrcoef \\
+	      \textnormal{These three functions return a ordinary matrix.}
+   \item nanmax, nanmin, nanmean, nanmedian, nansum, nanstd, nanvar, nancov \\
+	      \textnormal{All these nan-functions return a normal matrix, 
+		  inconsistent with their none-nan counterparts which many return a weird structure.
+		  Note their matrix version implemented in \matlab's stat toolbox.}
+   \item plot 
+	      \textnormal{Now directly call \mcode{tsplot}.}
+	\item iscompatible, isempty, isequal, issorted, size, length, fts2mat
+   \item \textnormal{Lag and Lead Operators the same as before:}
+   \begin{lstlisting}[numbers=none]
+    fts = lagts(fts, nperiod, padmode)
+    fts = leadts(fts, nperiod, padmode)
+   \end{lstlisting}
+   \item \textnormal{Concatenating Operators:}
+   \begin{lstlisting}[numbers=none]
+    fts = horzcat(fts1, fts2, ..., ftsN)   % => [fts1, fts2, ..., ftsN]
+    fts = vertcat(fts1, fts2, ..., ftsN)   % => [fts1; fts2; ...; ftsN]
+	\end{lstlisting}
+		\textnormal{\mcode{vertcat} has been enhanced to allow date overlapping in \myfints{} objects to be mergerd,
+		in which case the first occurance data used in the result.}
+	\end{itemize}
+}

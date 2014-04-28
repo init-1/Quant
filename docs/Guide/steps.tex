@@ -1,0 +1,527 @@
+\section{Build A New Factor\label{sec:steps}}
+
+In this section, we take \emph{Book to Price Ratio} as an example to show how to construct a new factor
+and add it to our (existing) factor library.
+
+Book to price ratio is a popular multiple to value stocks.
+It is defined as
+\begin{equation}\label{eq:BKTOPRICE}
+  \text{Book to Price} = \frac{\text{Total Equity Reported}}{\text{Price} \times\text{Shares Outstanding}}
+\end{equation}
+A higher B/P ratio could mean that the stock is undervalued,
+or, the higher the values of the factor, the better the associated stock.
+
+Now follow the steps discussed below (subsection (\ref{sec:SetPath})-(\ref{sec:Populate}) to create this factor.
+
+
+\subsection{Set Path\label{sec:SetPath}}
+
+ Set the path so that \matlab{} can find our toolbox:
+\begin{lstlisting}
+  basepath = ['Y:\' getenv('USERNAME') '\QuantStrategy\Analytics\'];
+  addpath([basepath 'Utility']);            % for xts, myfints
+  addpath([basepath 'date']);               % for DateBasis and Freq
+  addpath([basepath 'DB']);                 % DataBase related stuff
+  addpath([basepath 'myfintsUtility']);     % for bunch of things
+  addpath([basepath 'FactorLib\updated']);  % all up-to-date factors code
+\end{lstlisting}
+
+These pathes is not only for creating factors, 
+but also for developing quantitative models.
+
+\subsection{Create Class File\label{sec:CreateClassFile}}
+
+Every factor is defined as a class and organized in a class file under the folder
+\texttt{\$/QuantStrategy/\allowbreak{}Analytics/\allowbreak{}FactorLib/\allowbreak{}Dev})
+where \$ usually is you home folder.
+The class file should have the same name as the class name 
+(in current case, it is \texttt{BKTOPRICE}) and be structured as
+\begin{lstlisting}
+  classdef BKTOPRICE < FacBase
+      methods (Access = protected)
+          function factorTS = build(o, secIds, startDate, endDate)
+          ...
+          end
+		
+          function factorTS = buildLive(o, secIds, runDate)
+          % ONLY needed if live version largely different from nonlive (build) version.
+          ...
+          end
+      end
+  end
+\end{lstlisting}
+       Every factor class must include method \mcode{build}, which takes four parameters:
+       \footnote{These parameters will be passed by \mcode{create} method in \mcode{FacBase}
+       which unified for all factor classes.}
+       \begin{argdesc}
+          \item [o] (lowercase letter) the object of the class.
+                \footnote{In most cases and as sort of convention, we use \mcode{o} to represent the object inside a class file.}
+                Bearing in mind when program running here, aside members derived from \myfints{},
+                the following members already be set and can be accessed:
+                \begin{itemize}
+                   \item \mcode{DateBasis} keeps the frequency used internally of data items 
+                         and details related to frequency conversion. 
+                         See the subsection \emph{Understand Frequency} for detailed explanation.
+                         \emph{You can \emph{change} this member if necessary, 
+                         but should do this before loading any data items.}
+                   \item \mcode{isLive} is a \emph{read only} member 
+                         indicating if we are running in live or back-test mode.
+                   \item \mcode{freq}, also \emph{read only}, 
+                         is the frequency of the factor returned to users.
+                         When returning the final calculated factor to users (by \mcode{create} of \mcode{FacBase}) , 
+                         \mcode{FacBase} will re-sample the factor to this frequency.
+                         This member provides a way to let your code to know the final frequency 
+                         and is mainly controlled by \mcode{FacBase}, 
+                         you should not change its value (though we do not impose this restriction).
+                \end{itemize}
+
+          \item [secIds] a cell vector of strings representing names of securities (i.e., stocks).
+                The factor will be calculated for these stocks.
+
+          \item [startDate] start date of the period in which the factor is calculated.
+          \item [endDate] end date of the period in which the factor is calculated.
+       \end{argdesc}
+       As said in the comments of the code, 
+       you should \emph{only} include the live version (\mcode{buildLive}) in the class
+       if it is significantly different from the nonlive version (\mcode{build}).
+       If they are only marginally different, 
+       you can branch your code by checking the value of \mcode{o.isLive}.
+
+       Note that \mcode{buildLive} takes few parameters 
+       because those left out are meaningless in live.
+
+\nopagebreak
+\addcontentsline{toc}{subsubsection}{Understand Frequency}
+\tikzset{
+  normal border/.style={orange!30!black!10, decorate, 
+     decoration={random steps, segment length=2.5cm, amplitude=.7mm}},
+  torn border/.style={orange!30!black!5, decorate, 
+     decoration={random steps, segment length=.5cm, amplitude=1.7mm}}}
+
+\begin{parchment}[Understand Frequency]
+       \small\sffamily
+       Two frequencies are used inside a factor class. 
+       The first, accessing via \mcode{o.freq} where \mcode{o} is the factor object,
+       is the frequency of the final factor constructed by the factor class.
+       It is specified as second parameter when users create a factor by calling
+       (\mcode{create} can be passed more parameters in name-value pairs following \mcode{endDate}.)
+\begin{lstlisting}[numbers=none]
+  fac = create(BKTOPRC, 'M', isLive, secIds, startDate, endDate);
+\end{lstlisting}
+       where \mcode{'M'} stands for monthly frequency.
+       The factor returned in \mcode{fac} then is monthly sampled.
+       We thereafter refer it as \emph{target frequency}.
+
+       The second, almost unnoticeable but equally important, stored as
+       a \mcode{DataBasis} object inside the factor,
+       is the frequency of data items involved in calculating the factor value.
+       We refer this frequency as \emph{calc frequency}
+       This frequency can be the same as target frequency.
+       But at least should be higher than the target frequency.
+       The reason is obvious:
+       when the factor returned to user, \mcode{FacBase}
+       will convert the factor in calc frequency to the target frequency,
+       and if the calc frequency is more sparser than the target frequency,
+       information is going to be lost.
+
+       Then when and why do we need the calc frequency higher than (instead of equal to) the target frequency?
+       Suppose we need a factor both weekly and monthly sampled,
+       it seems we should pick up the weekly calc frequency.
+       This is fine for weekly target frequency, 
+       but for monthly target frequency,
+       converting from weekly to monthly is inaccurate, 
+       since one month has 30/7 weeks, 
+       and it is not an integer.
+       So a better frequency in this case should be daily.
+
+       Choice of calc frequency also depends on the definition of the factor.
+       Consider a factor of 5 day momentum of prices,
+       clearly its calc frequency should be set to daily.
+       To force a factor to use a fixed calc frequency 
+       (instead of calc frequency passed by \mcode{create}),
+       you can set its \mcode{dateBasis} member to that frequency
+       before loading any items:
+\begin{lstlisting}[numbers=none]
+    o.dateBasis = DateBasis('BD');
+\end{lstlisting}
+       where \mcode{'BD'} indicates business days.
+
+       \mcode{DateBasis} is a class in charge of frequency conventions.
+       Aside from \mcode{'BD'}, we have other mnemonics:
+          \hspace*{1cm}\begin{tabular}{ll}
+            \mcode{'BD'} & business daily \\
+            \mcode{'BW'} & business weekly \\
+            \mcode{'BM'} & business monthly \\
+            \mcode{'D'}  & calendar daily \\
+            \mcode{'W'}  & calendar weekly \\
+            \mcode{'M'}  & calendar monthly \\
+         \end{tabular}
+
+      \vspace{.5cm}You can also define your own calc frequency by
+\begin{lstlisting}[numbers=none]
+    o.dateBasis = DateBasis(freqBasis, nY, nQ, nM, nW, nD, isBusDay);
+\end{lstlisting}
+      where 
+      \begin{argdesc}
+         \item [freqBasis] a char of \mcode{'D'}, \mcode{'W'}, \mcode{'M'}, \mcode{'Q'} or \mcode{'A'}, 
+               standing for daily, weekly, monthly, quarterly and annually, respectively.
+               Frequency indicators are interpreted by class \mcode{Freq}.
+         \item [nY, nQ, nM, nW, nD] are all integers, 
+               indicating how many periods are contained in a year, a quarter, a month, a week and a day,
+               respectively.
+         \item [isBusDay] indicates if only business days are accounted;
+               or, equivalently, if whe should exclude holidays.
+               \mcode{isbusDay} is processed by class \mcode{Freq}.
+      \end{argdesc}
+      For example, the \mcode{DateBasis('BD')} previously actually is defined as:
+\begin{lstlisting}[numbers=none]
+    o.dateBasis = DateBasis('D', 252, 21*3, 21, 5, 1, true);
+\end{lstlisting}
+      where we abide by the convention that one year has 252 business days, and one month has 21 business days.
+\end{parchment}
+
+\subsection{Write Implementation Code\label{sec:Implementation}}
+
+Since \mcode{FacBase} does most of routine job,
+you only need to focus on the definition part of the factor.
+Taking a look at the \mcode{BKTOPRICE} and 
+comparing it with equation (\ref{eq:BKTOPRICE}) on page \pageref{eq:BKTOPRICE}
+could give you some sense about this point:
+\begin{lstlisting}
+classdef BKTOPRICE < FacBase
+    methods (Access = protected)
+        function factorTS = build(o, secIds, startDate, endDate)
+            % §\textcolor{blue}{\textbf{1}}§ Load data items
+            bookValue = o.loadItem(secIds,'D000686133',startDate,endDate,4);
+            closePrice = o.loadItem(secIds,'D001410415',startDate,endDate);
+            shares = o.loadItem(secIds,'D001410472',startDate,endDate);
+            
+            % §\textcolor{blue}{\textbf{2.1}}§ Calculate the mean of last n-quarter book value for each point in time
+            bookValueMean = ftsnanmean(bookValue{:});
+            bookValueMean = backfill(bookValueMean, o.DCF('3M'),'entry');
+            
+            % §\textcolor{blue}{\textbf{2.2}}§ Here the equation §\ref{eq:BKTOPRICE}§
+            factorTS = (1000000*bookValueMean./shares)./closePrice;
+        end
+    end
+end
+\end{lstlisting}
+
+Basically, the implementation follows a regular procedure:
+\begin{enumerate}
+   \item Load data items using \mcode{o.loadItem}.
+         \footnote{Note not all data items can be loaded this way, see explanation below.}
+         If you loading multiple items using this function
+         with the same parameters of \mcode{secIds}, \mcode{startDate} and \mcode{endDate},
+         then the items you finally get are already aligned along both the time and the field dimension.
+   \item Plug items into definition equation(s).
+         Some equations may require a bit more complex logic and more code than a few lines,
+         sometimes even need to write some help functions.
+         So this is the key part you should focus on.
+   \item Do any necessary processing of the calculated factor, 
+         like backfilling
+         (though backfilling is not necessary in most cases, 
+         since \mcode{o.loadItem} will do backfilling according to the natural frequency of the raw data items. 
+         Also note that \mcode{FacBase} also set all \mcode{inf}s to \mcode{NaN}s.
+\end{enumerate}
+
+This pattern is not mandatory. 
+Based on factors, you may employ different ways to implement factors.
+However, always keep in mind that item aligning, item backfilling,
+re-sampling the final factor to target frequency,
+and others mentioned above have been done by the framework.
+
+Sometimes a group of factors may share the same structure, 
+just a few things different.
+In this case, it is better to abstract a base class (derived from \mcode{FacBase}, of course)
+which do the common work,
+and then concrete factor classes, each do their own unique things.
+
+If you have decided to add a live version of build (\mcode{buildLive}),
+follow the same guild line.
+But even you do not have one,
+the framework will provide it for you
+(defined in \mcode{FacBase} and inherited by your own factor classes),
+and 
+\begin{lstlisting}[numbers=none]
+   o.buildLive(secIds, runDate)      % o.isLive == false
+\end{lstlisting}
+is equivalent to
+\begin{lstlisting}[numbers=none]
+   o.build(secIds, runDate, runDate) % o.isLive == true, same start date and end date
+\end{lstlisting}
+bearing in mind that \mcode{isLive} has different values corresponding to live and back-test cases.
+
+%            A direct simply way is to remove the class restrictions. 
+%            This can be done by modifying the class definition file. 
+%            For our \mcode{BKTOPRICE} example, the modified class definition file for debugging
+%            looks like
+%%%%%%
+%\begin{lstlisting}
+%classdef Book2Price §\sout{\textcolor{red}{< FacBase}}§
+%    methods (§\sout{\textcolor{red}{Access = protected, }}§Static)
+%        factorTS = build(secIds, startDate, endDate, targetFreq)
+%        factorTS = buildLive(secIds, endDate)
+%    end
+%end
+%\end{lstlisting} 
+%%%%%%%
+% 	          Note the \sout{\textcolor{red}{crossed red}} part is removed temporarily.
+%	          Then you can call your function like this:\\
+%	             \hspace*{.5cm} \mcode{fts = Book2Price.build('', '1996-01-01', '2011-03-31', 'M');}\\
+%	          Note that you \texttt{@Book2Price} folder must be either in \matlab{} path set or directly
+%	          under current work folder.
+% 
+  
+\subsection{Test\label{sec:Test}}
+
+Test you code by calling \mcode{create}:
+\begin{lstlisting}
+% When isLive == false, create actually call build
+  fac = create(factor_object, isLive, targetFreq, secIds, startDate, endDate, 'name', val,...)
+% When isLive == true, create actually call buildLive
+  fac = create(factor_object, isLive, secIds, runDate, 'name', val,...)
+\end{lstlisting}
+
+    Parameters \mcode{secIds}, \mcode{startDate}, \mcode{endDate} and \mcode{runDate} 
+    have the same meanings as in \mcode{build} and \mcode{buildLive} explained in last step
+    (subsection \ref{sec:Implementation}).
+    
+    The first parameter, \mcode{factor_object}, 
+    is an (usually empty) factor object that can be created either by direct putting the class (default) constructor there:
+    \footnote{Because we never implement a constructor for factor classes, 
+             \matlab{} produces a default constructor.
+             Also note that constructor has the same name as the class.}   
+\begin{lstlisting}[numbers=none]
+  fac = create(BKTOPRICE, ...)
+\end{lstlisting}
+    or through a function handle to the class constructor
+\begin{lstlisting}[numbers=none]
+  fac = create(fun_handle(), ...)  % fun_handle should be @BKTOPRICE
+\end{lstlisting}
+    The pair of parentheses after the function handle is must, 
+    otherwise \matlab{} thinks you are passing a function handle instead of the factor object.
+
+   The second parameter, \mcode{isLive},
+   decides what parameters should be followed.
+   If it is \mcode{true}, it tell \mcode{create} to create the live version of
+   the factor and can only be called as shown in line 4 in the above code snippet;
+   if it is \mcode{false}, back-test version of factor is going to be created
+   as shown in line 2 in the same code snippet.
+
+   From third parameter on, the two versions of build diverge.
+   For \mcode{build}, it is target frequency.
+   \mcode{buildLive} does not need that parameter since it only need to return values for the \mcode{runDate}.
+
+   The \mcode{'name'}-\mcode{val} pairs are used to provide additional information.
+   \mcode{'name'} can be of the following:
+
+   \vspace*{.2cm}\begin{tabular}{r>{\sffamily}p{11cm}<{}}
+        \mcode{'id'}   & factor id \\
+        \mcode{'name'} & factor name \\
+        \mcode{'type'} & factor type \\
+        \mcode{'higherTheBetter'} & true if higher the factor value, the better the factor; false the other way around \\
+        \mcode{'dateBasis'} & for calc frequency, val passed should be type of \mcode{DateBasis} \\
+   \end{tabular}
+
+   \vspace{.3cm}
+   Usually, \mcode{'id'}, \mcode{'name'}, \mcode{'type'} and \mcode{'higherTheBetter'} 
+   are values from factor registering database (if the factor has been registered).
+   For an example of using these \mcode{'name'}-\mcode{val} parameters,
+   see \texttt{LoadFactorTS.m} which not only load factor values, but also its associated
+   registered information.
+   For how to register a factor, go to next step.
+
+   Finally note that \mcode{build} and \mcode{buildLive} can not be called directly
+   since factor creation need \mcode{create} to do the common routine jobs 
+   while \mcode{build} to deal with the factor definition.
+
+\subsection{Register Factor\label{sec:Register}}
+
+Having a factor been done in coding, debugging and testing, 
+you should register it into the database, 
+so that it can be known by and used in models.
+Here is the format:
+\begin{lstlisting}
+id = Factory.Register2DB(...
+      'Book to Price Ratio' ...                             % name
+    , 'Book value per share divided by price per share' ... % description
+    , 'BKTOPRICE' ...                                       % name of factor class
+    , true ...                                              % is it the higher the better?
+    , true ...                                              % is it active currently?
+    , true);                                                % can it be used in production?
+\end{lstlisting}
+The \mcode{id} returned is an unique string of form like \mcode{'F00172'} and
+can be referenced when- and wherever it is needed,
+like in \texttt{LoadFactorTS} when you load populated factors,
+in factor combination (blending) where you need to specify factors to be combined, etc.
+
+The database table for keeping factor registering information is
+\texttt{quantstrategy\allowbreak{}.fac\allowbreak{}.factormstr}.
+	
+\subsection{Populate\label{sec:Populate}}
+
+When needing a factor, you can call \texttt{LoadFactorTS} providing it with factor id and other information.
+\texttt{LoadFactorTS} can either calculate the factor on the fly or
+read it from database where pre-calculated values of factors
+has been populated.
+There are pros and cons for both ways:
+The benefits of on-the-fly is obvious: 
+it can always reflect newest changes in data items and easy to maintain the consistence of factors,
+not to mention it also reduces data redundancy.
+Equally obvious is its drawback: it is slow in our current database infrastructure.
+
+Populating factor is on the opposite side of on-the-fly.
+The class \mcode{Factory} is used to do the populating and
+if needed, please refer to the demo code in
+\texttt{run\allowbreak{}Registered.m} and \texttt{run\allowbreak{}Registered\allowbreak{}Live.m}.
+
+\subsection{More Examples}
+
+For helping you get more sense about creating factors,
+we present two more examples in this subsection,
+each of which shows different aspects of factor creation.
+
+\nopagebreak
+\addcontentsline{toc}{subsubsection}{5-Day Price Reversal (REVSAL5D)}
+\begin{parchment}[5-Day Price Reversal (REVSAL5D)]
+\small\sffamily
+
+Price reversal is a well-know short-term anomaly.  
+The expectation is that stocks that have performed very well in the last 5 days prior to stock selection days 
+will underperform over the next month and vice versa.
+Its formula is 
+\[
+    \text{5-Day Price Reversal} = \text{\textit{Z}-Score}_{\text{cross sectional}}
+       \left(\frac{\text{Price}_{\text{current}}}{\text{Price}_{\text{5 days lag}}}-1\right).
+\]
+Support we want monthly factors (i.e., target frequency is \mcode{'M'}),
+what calc frequency should you choose?
+Since the factor itself is defined based on daily,
+the calc frequency definitely shoud be daily.
+In this case, based on the nature
+the factor should decide its calc frequency instead of
+setting outside by \mcode{create} 
+(Remember the \mcode{'name'}-\mcode{val} parameter can be used
+to pass a \mcode{'dateBasis'}).
+That is the first thing to do in the code:
+changing the \mcode{dateBasis} to daily
+(actually, business daily, since price only quoted in business day)
+no matter what it is set outside by \mcode{create} (and therefore by the framework).
+
+\begin{lstlisting}
+classdef REVSAL5D < FacBase
+    methods (Access = protected)
+        function factorTS = build(o, secIds, startDate, endDate)
+            o.dateBasis = DateBasis('BD'); % force the calc frequency to be 'BD'
+            
+            sDate = datestr(addtodate(datenum(startDate),-1,'M'),'yyyy-mm-dd');
+            closePrice = o.loadItem(secIds,'D001410415',sDate,endDate);
+            closePrice = backfill(closePrice,o.DCF('3D'),'entry');
+            factorTS = Price2Return(closePrice,5);
+        end
+    end
+end
+\end{lstlisting}
+
+Note also how we use \mcode{DCF} function to calculate a given tenor.
+A tenor is a period or duration represented by something like \mcode{'5D'} (5 days),
+\mcode{'2M'} (2 months), \mcode{'6W'} (6 weeks), etc.
+The units can be used in a tenor representation are the same
+as frequency units (i.e., \mcode{'D'}, \mcode{'W'}, \mcode{'M'}, \mcode{'Q'}, \mcode{'Y'}).
+\mcode{DCF}, standing for \emph{Date Conversion Factor},
+converts the tenor given in the first parameter to an integer
+number based on the calc frequency;
+the number is the number of basic period represented by calc frequency;
+if it is omitted, it is assumed to be 1.
+For example, if calc frequency is \mcode{'BD'},
+then \mcode{o.DCF('1M')} equals to 21, meaning in one month there are 21 business days.
+In current example, since we force the calc frequency to be \mcode{'BD'},
+\mcode{o.DCF('3D')} in line 8 is 3.
+Since the conversion is based on calc frequency represented by \mcode{dateBasis}
+of the factor object \mcode{o}, the items involved (\mcode{closePrice})
+must also be obtained by methods in \mcode{FacBase};
+to be specific, methods of \mcode{loadItem} and \mcode{loadBondYield} for now.
+
+For items (\myfints{} objects) obtained by other ways,
+you can set its frequency to be the same as calc frequency; for example:
+\begin{lstlisting}[numbers=none]
+   gics = LoadQSSecTS(secIds, 913, 0, startDate, endDate, o.dateBasis.freqBasis);
+\end{lstlisting}
+then you can still use \mcode{DCF} as before:
+\begin{lstlisting}[numbers=none]
+   gics = lagts(gics, o.DCF('1M'));
+   gics = backfill(gics, o.DCF('1M');
+\end{lstlisting}
+
+Finally, we mention here that 
+\mcode{FacBase} provides shortcuts for \mcode{lagts} and \mcode{leadts}:
+\begin{lstlisting}[numbers=none]
+  fts = o.lagfts(fts, '3M')   <==> fts = lagts(fts, o.DCF('3M');
+  fts = o.leadfts(fts, '3M')  <==> fts = leadts(fts, o.DCF('3M');
+\end{lstlisting}
+
+\end{parchment}
+
+
+\nopagebreak
+\addcontentsline{toc}{subsubsection}{Blended EPS Yield (BEPSY)}
+\begin{parchment}[Blended EPS Yield (BEPSY)]
+\small\sffamily
+
+Rather than behaving rationally as implied in standard financial theory, 
+investors tend to make systematic cognitive errors which a truly objective investor can exploit. 
+Such errors include overreacting to bad news, 
+confusing a bad company with a bad stock, 
+and assuming poorly performing stocks will continue to behave badly.  
+Each of these can result in an inappropriately 
+low stock price which can lead to investment opportunity.
+
+The formula of the factor is therefore defined as
+\[
+    \text{Blended EPS Yield} = \frac{\text{Blended Stock EPS}}{\text{Stock Price}}
+\]
+where blended stock EPS is average of the actual EPS and estimate EPS if both are available,
+else it is the one available if only one of them is available,
+otherwise, blended stock EPS is set to null
+
+Here's the code:
+\begin{lstlisting}
+classdef BEPSY < FacBase
+    methods (Access = protected)
+        function factorTS = build(o, secIds, startDate, endDate)
+            % set the sDate 3 month earlier than the input startDate to ensure some look back
+            % for the first observation
+            sDate = datestr(addtodate(datenum(startDate),-3,'M'),'yyyy-mm-dd');
+            EPS_Act = o.loadItem(secIds,'D000432130',sDate,endDate);
+            if o.isLive
+                EPS_FY1 = o.loadItem(secIds,'D000448965',sDate,endDate); % QFS FY1 EPS mean
+            else            
+                EPS_FY1 = o.loadItem(secIds,'D000435584',sDate,endDate);
+            end
+            closePrice = o.loadItem(secIds,'D001410415',sDate,endDate);
+            
+            % match the items
+            EPS_Act = backfill(EPS_Act, '2M', 'entry');
+            EPS_FY1 = backfill(EPS_FY1, '2M', 'entry');
+            
+            % calculate factor value
+            EPS_Blended = ftsnanmean(EPS_Act, EPS_FY1);
+            factorTS = EPS_Blended ./ closePrice;
+        end
+    end
+end
+\end{lstlisting}
+Note that all income statement items are annualized by summing up last four quarter values. 
+But the most notible thing is how we use \mcode{o.isLive} to differentiate live and back-test version of
+build in a single \mcode{build} function
+instead of having them seperately in \mcode{build} and \mcode{buildLive}.
+
+Finally, we emphasis here that unlike last example you can replace \mcode{o.DCF('3D')} by \mcode{3}
+since forcing of calc frequency,
+here you must stick to \mcode{o.DCF('2M')} (lines 16 and 17)
+because you don't know what the calc frequency is 
+(it is determined outside).
+
+\end{parchment}
+

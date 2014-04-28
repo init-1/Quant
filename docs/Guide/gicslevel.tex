@@ -1,0 +1,20 @@
+Controls to what level in \mcode{GICS} the neutralization is performed.
+
+                 Standard GICS code consists of 8 digits, a form of like \mcode{25203010}.
+                 The first 2 (\mcode{25} in the previous example) refer to \textbf{sector},
+                 the next 2 (\mcode{20}) to \textbf{industry group},
+                 the 5-6th (\mcode{30}) to \textbf{industry},
+                 and the last 2 (\mcode{10}) to \textbf{sub-industry}.
+                 Correspondingly, the value of level can be:
+                 0: NO neutralization;
+                 1: sector;
+                 2: industry group; 
+                 3: industry;
+                 or 4: sub-industry.
+                 \emph{Default} is 1.
+                 Note that it is only effective when \mcode{GICS} being provided.
+
+                 \mcode{level} can also be \mcode{'customized'}, 
+                 used with non-standard \mcode{GICS} passed by user.
+                 In this case, the neutralization will be performed based on all digits of 
+                 the non-standard gics code.

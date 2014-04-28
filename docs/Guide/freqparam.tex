@@ -1,0 +1,29 @@
+      \begin{longtable}[r]{>{\ttfamily}l<{} c p{8cm} p{2.5cm}}
+	  \textsf{\textbf{Parameter}} & \textsf{\textbf{Default}} & \textsf{\textbf{Meaning}} & \textsf{\textbf{Freqs Appl.}}\\
+	  \toprule
+	  \endfirsthead
+	  \textsf{\textbf{Parameter}} & \textsf{\textbf{Default}} & \textsf{\textbf{Meaning}} & \textsf{\textbf{Freqs Appl.}}\\
+	  \toprule
+	  \endhead
+	  \bottomrule
+	  \endfoot
+	  \bottomrule
+	  \endlastfoot
+      \mcode{'EOW'} & 0 & 0 - 6, Specifies the end-of-week day:\newline
+					  0--Friday,  1--Saturday, 2--Sunday, 3--Monday,
+                 4--Tuesday, 5--Wednesday, 6--Thursday
+					& weekly(2) \\
+      \mcode{'ED'} & 0 & The end of date (of month) in a period. 0 is the last day (or last business day),
+                     1-31 is the specific day (if beyond end of month, adjust to end of month)
+	               & monthly(3), quarterly(4), semiannual(5), annual(6) \\
+      \mcode{'EM'} & 3 & Last month of the first period (e.g., quarter, year). 
+	               All subsequent quarterly dates are based on this month
+				   & quarterly(4), semiannual(5), annual(6) \\
+	   \mcode{'Busdays'} & 0 & Either 0 or 1, indicating whether business days (non-weekend and non-holdidays) are counted.
+                  If a sampling day is fallen in a non-business day, it will be adjusted to the next business day, 
+                  unless there's no business day in the current frequency period (e.g., current month), 
+                  in which case prior business day will be used.
+	               & All frequencies \\
+      \mcode{'Holidays'} & NYSE & A vector specifying holidays & All frequencies \\
+      \mcode{'Weekend'}  & \footnotesize[1 0 0 0 0 0 1] & Specify which day is weekend in order of [Sun Mon Tue Wed Thu Fri Sat] & All frequencies \\
+      \end{longtable}

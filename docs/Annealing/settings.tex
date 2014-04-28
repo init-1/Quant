@@ -1,0 +1,136 @@
+%% Most commonly used packages
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.0cm]{geometry}
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amsfonts,amsthm,bm}
+\usepackage{graphicx, subfigure}
+\usepackage[numbers]{natbib}
+\usepackage{array}
+\usepackage{mdwlist}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage[numbered]{mcode}
+\usepackage{colortbl,multirow}
+\usepackage{fancyhdr}
+\usepackage{lscape}
+\usepackage{booktabs}
+\usepackage[hang]{footmisc}
+\usepackage{xcolor}
+\usepackage{ifthen}
+\usepackage{calc}
+\usepackage{ulem}
+\usepackage[breaklinks]{hyperref}
+
+\usepackage{fancybox}
+\usepackage[scaled=0.92]{helvet}
+%\usepackage{mathptmx}
+%\usepackage[helvet]{sfmath}
+\usepackage{mathpazo}
+%\renewcommand{\ttdefault}{fvm}
+%\renewcommand*\familydefault{\sfdefault}
+
+%% Colors
+\definecolor{ingorange}{rgb}{1,0.4,0}
+\definecolor{inglblue}{rgb}{0.7059,0.7647,0.8824}
+\definecolor{ingdblue}{rgb}{0,0,0.4}
+\definecolor{inggrey}{rgb}{0.5882,0.5882,0.5882}
+\definecolor{lightgrey}{rgb}{.90,.95,.95}
+\definecolor{dbrown}{rgb}{.72,.45,.2}
+\definecolor{dgreen}{rgb}{0.2,0.8,0}
+
+\colorlet{tableheadcolor}{white}
+\colorlet{ttextcolor}{black}
+\colorlet{ctwo}{lightgrey}
+\colorlet{cone}{white}
+\colorlet{cin}{dgreen}
+\colorlet{cout}{red}
+\colorlet{cnormal}{black}
+\arrayrulecolor{ingorange}
+
+%% Math Operators
+\DeclareMathOperator \mean{mean}
+\DeclareMathOperator \avg {avg}
+\DeclareMathOperator \std {Std}
+\DeclareMathOperator \cov {Cov}
+\DeclareMathOperator \var {Var}
+\DeclareMathOperator \corr{Corr}
+\DeclareMathOperator \IR  {IR}
+\DeclareMathOperator \IC  {IC}
+\DeclareMathOperator \E   {E}
+\DeclareMathOperator*\argmax{argmax}
+
+%% Contents finer control
+%\makeatletter
+%\renewcommand\l@subsection{\@tocline{2}{0pt}{32pt}{5pc}{}}
+%\renewcommand\l@subsubsection{\@tocline{3}{0pt}{5pc}{7pc}{}}
+%\renewcommand\@captionheadfont{\normalfont\sffamily}
+%\renewcommand\@captionfont{\normalfont\sffamily}
+%\makeatother
+
+%% Header and Footers
+% running headers
+\newcommand{\mymark}{
+\ifthenelse{\equal{\rightmark}{}}
+{\leftmark} % if equal
+{\rightmark}} % if not eq
+% Headers and footers style
+\fancyhead{}
+\setlength{\headheight}{18.2pt}
+\fancyhead[RO,LE]{Peter Liu} 
+\fancyhead[RE]{\leftmark}
+\fancyhead[LO]{\mymark}
+\fancyfoot{}
+\fancyfoot[RO,LE]{\textbf{\thepage}}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\headrule}{{\color{ingorange}%
+  \hrule width\headwidth height\headrulewidth \vskip-\headrulewidth}}
+\pagestyle{fancy}
+\renewcommand{\footnotemargin}{1.38ex}% Setting left margin; 
+\setlength{\footnotesep}{12pt}
+\addtolength{\belowcaptionskip}{5pt}
+
+%% Basic layout
+% lines and paragraphs distribution
+\renewcommand{\baselinestretch}{1.28}
+\setlength{\parskip}{0pt}
+
+\renewcommand{\emph}[1]{\textit{\textcolor{ingorange}{#1}}}
+\renewcommand\descriptionlabel[1]%
+  {\textsf{\textbf{\textcolor{ingorange}{#1}}}}
+
+% new sections for function description
+\makeatletter
+\newcommand\ffunentry{\@startsection%
+    {subsubsection}{3}{0mm}{-1.8ex}{0.2ex}%
+    {\normalsize\sffamily\bfseries}}
+\newcommand\fundesc{\@startsection%
+    {paragraph}{4}{0mm}{-0.5ex}{0.2ex}{\normalsize\sffamily\bfseries}}
+\newenvironment{argdesc}
+               {\begin{list}{}%
+                  {\let\makelabel\arglabel%
+                   \setlength\labelwidth{30pt}%
+                   \setlength\leftmargin{\labelwidth+\labelsep}%
+                   \setlength\parskip{2pt}}}%
+               {\end{list}}
+\makeatother
+
+\newsavebox\mybox
+\newlength\mylen
+\newcommand\labelfmt[1]{\hspace\labelsep\normalfont\bfseries\texttt{\textcolor{ingorange}{#1}}}
+\newcommand*\arglabel[1]{\settowidth\mylen{\labelfmt{#1}}%
+                         \ifthenelse{\lengthtest{\mylen > \labelwidth}}%
+                         {\parbox[b]{\labelwidth}{\makebox[0pt][l]{\labelfmt{#1}}\\\mbox{}}}%label too long, break a new line
+                         {\labelfmt{#1}}}% short lable, adjust to \leftmargin
+
+
+%\newcommand\funentry[1]{\ffunentry[#1]{\textcolor{ingorange}{\Forward}\textbf{#1}\textcolor{ingorange}{\Rewind}}}
+\newcommand\funentry[1]{\ffunentry[\texttt{#1}]{\textcolor{ingdblue}{\shadowbox{#1}}}}
+\newcommand\funentrynew[1]{\ffunentry[\bfseries\textcolor{ingorange}{\textsf{#1}}]{\textcolor{ingdblue}{\shadowbox{#1}}}}
+\newcommand\usage{\fundesc{Usage}}
+\newcommand\where{\fundesc{Where}}
+\newcommand\inarg{\fundesc{Input}}
+\newcommand\outarg{\fundesc{Output}}
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{3}

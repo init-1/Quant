@@ -1,0 +1,16 @@
+ Following a char-type string indicator parameter \mcode{'CalcMethod'} (case-insensitive),
+ specifies which method is used to calculate resampling sample data.
+ Methods could be one of
+ \begin{itemize}
+ \item \mcode{'CumSum'}
+ Returns the cumulative sum of the values between each sampling period (e.g., week, month, etc.)
+ Data for missing dates are given the value 0.
+ \item \mcode{'Exact'}
+ Returns the exact value at the end-of-sampling-period date. No data manipulation occurs.
+ \item \mcode{'Nearest'}
+ (\emph{default}) Returns the values located at the end-of-sampling-period date. 
+ If there is missing data, Nearest returns the nearest data point preceding the end-of-sampling-period date. 
+ \item \mcode{'SimpAvg'}
+ Returns an averaged value over each sampling period 
+ that only takes into account dates with data (non NaN) within each quarter.
+ \end{itemize}
